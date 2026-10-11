@@ -64,7 +64,8 @@ Use Railway, Render, or Fly. Example with **Render** or **Railway**:
    - **Start command:**  
      `pnpm --filter @solar/api start:prod`  
      (runs `prisma migrate deploy`, then `node dist/main.js` — no seed)
-   - **Render note:** Repo [`.gitignore`](../.gitignore) ignores `dist/`. Render would strip that from the deploy upload unless [`.renderignore`](../.renderignore) is present (it replaces `.gitignore` for the upload and intentionally keeps `apps/api/dist`). Commit `.renderignore` before redeploying.
+   - **Nest emit path:** [`apps/api/tsconfig.build.json`](../apps/api/tsconfig.build.json) sets `"rootDir": "src"` so `nest build` writes `apps/api/dist/main.js` (not `dist/src/main.js`). Start scripts use `node dist/main.js`.
+   - After changing build settings, use **Manual Deploy → Clear build cache & deploy** on Render.
 4. Set environment variables on the API service:
 
    | Variable | Example / notes |
