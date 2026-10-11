@@ -1,7 +1,7 @@
 import type { DashboardDetail, DashboardPreset, DashboardSummary } from "@solar/shared";
 
 export function apiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || "http://localhost:3000";
+  return import.meta.env.VITE_API_URL || "https://solar-accounting-erp.onrender.com";
 }
 
 let activeBranchIds: string[] = [];
