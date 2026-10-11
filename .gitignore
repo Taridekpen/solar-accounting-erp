@@ -5,6 +5,7 @@ coverage/
 *.tsbuildinfo
 .env
 .env.local
+.env.production
 .env.*.local
 .env.example
 .env.*.locexampleal
