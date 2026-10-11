@@ -1,4 +1,4 @@
-import { apiRequest } from "@/services/api-client";
+import { apiRequest, clearCsrfToken } from "@/services/api-client";
 
 export interface SessionBranch {
   id: string;
@@ -35,8 +35,12 @@ export function login(body: { email: string; password: string; totp?: string }) 
   return apiRequest<SessionView>("/auth/login", { method: "POST", body: JSON.stringify(body) });
 }
 
-export function logout() {
-  return apiRequest<{ status: string }>("/auth/logout", { method: "POST" });
+export async function logout() {
+  try {
+    return await apiRequest<{ status: string }>("/auth/logout", { method: "POST" });
+  } finally {
+    clearCsrfToken();
+  }
 }
 
 export function enrollMfa() {

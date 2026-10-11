@@ -167,7 +167,8 @@ If the database is already seeded, skip this step. Confirm `system_metadata.sche
 - `WEB_ORIGIN` exactly equals the browser origin (scheme + host + port if any), e.g. `https://your-app.vercel.app`.
 - Browser calls use `credentials: "include"` (already in the web client).
 - After login, DevTools → Application → Cookies on the API host should show `solar_session` and `solar_csrf`.
-- Prefer a shared parent domain later (`app.yourdomain.com` + `api.yourdomain.com`) when you add a custom domain.
+- CSRF: the web app cannot read the API host’s `solar_csrf` cookie via `document.cookie` when hosts differ. Login returns `csrfToken` in JSON; the client stores it (memory + `sessionStorage`) and sends `X-CSRF-Token` on mutations.
+- Prefer a shared parent domain (`app.yourdomain.com` + `api.yourdomain.com`) so session cookies are same-site.
 
 ---
 
