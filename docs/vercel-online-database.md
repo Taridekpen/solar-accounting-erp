@@ -53,31 +53,31 @@ The API health check and BullMQ jobs need Redis. Without it, `/health` fails and
 
 ## Step 3 — Deploy the Nest API (not on Vercel)
 
-Use Railway, Render, or Fly. Example with **Railway**:
+Use Railway, Render, or Fly. Example with **Render** or **Railway**:
 
 1. New project → **Deploy from GitHub** → select this repository.
-2. Add a service for the API. Set root or build to use the monorepo:
+2. Add a **Web Service** for the API. Keep **Root Directory** empty (monorepo root). Do not set it to `apps/api` when using the commands below.
+3. Build and start (seed is **not** part of start — run seed once manually if the DB is empty; skip if already seeded):
    - **Build command:**  
-     `pnpm install --frozen-lockfile && pnpm --filter @solar/shared build && pnpm --filter @solar/accounting-rules build && pnpm --filter @solar/api exec prisma generate && pnpm --filter @solar/api build`
+     `pnpm install --frozen-lockfile --prod=false && pnpm --filter @solar/shared build && pnpm --filter @solar/accounting-rules build && pnpm --filter @solar/api exec prisma generate && pnpm --filter @solar/api build`  
+     `--prod=false` keeps `@nestjs/cli` available so `nest build` writes `apps/api/dist/main.js`. Without that file, start fails with `Cannot find module .../dist/main.js`.
    - **Start command:**  
-     `pnpm --filter @solar/api exec prisma migrate deploy && pnpm --filter @solar/api exec prisma db seed && pnpm --filter @solar/api start`  
-     (After the first successful seed, you can drop `db seed` from the start command so production restarts do not re-run seed logic.)
-3. Set environment variables on the API service:
+     `pnpm --filter @solar/api start:prod`  
+     (runs `prisma migrate deploy`, then `node dist/main.js` — no seed)
+4. Set environment variables on the API service:
 
    | Variable | Example / notes |
    | --- | --- |
-   | `NODE_ENV` | `production` |
-   | `PORT` | `3000` (or the port your host injects) |
-   | `DATABASE_URL` | Neon/Supabase/Railway Postgres URL with `sslmode=require` |
-   | `REDIS_URL` | Upstash/Railway Redis URL |
+   | `NODE_ENV` | `production` (runtime; install still uses `--prod=false` in the build command) |
+   | `PORT` | Leave unset on Render so it uses the injected port, or set `3000` if the host expects it |
+   | `DATABASE_URL` | Neon/Supabase direct or pooled URL with `sslmode=require` |
+   | `REDIS_URL` | Upstash `rediss://…` or host Redis URL |
    | `WEB_ORIGIN` | Your Vercel URL, e.g. `https://your-app.vercel.app` (update after Step 4) |
    | `SESSION_SECRET` | Random string, at least 32 characters |
-   | `SEED_ADMIN_EMAIL` | Admin email for first seed only |
-   | `SEED_ADMIN_PASSWORD` | Strong password for first seed only |
    | `LOG_LEVEL` | `info` |
 
-4. Deploy and open the public API URL, for example `https://solar-api.up.railway.app`.
-5. Confirm health:
+5. Deploy and open the public API URL, for example `https://your-api.onrender.com`.
+6. Confirm health:
 
    ```bash
    curl https://YOUR-API-HOST/health
@@ -85,7 +85,7 @@ Use Railway, Render, or Fly. Example with **Railway**:
 
    You should see `"status":"ok"` with database, redis, and queue checks.
 
-6. Note the API origin for the web env (`VITE_API_URL`).
+7. Note the API origin for the web env (`VITE_API_URL`).
 
 **CORS / cookies:** The API allows only `WEB_ORIGIN` with credentials. After the Vercel URL exists, set `WEB_ORIGIN` to that exact HTTPS origin (no trailing slash) and redeploy the API.
 
@@ -133,15 +133,15 @@ Place this in `apps/web` if that is the Vercel root directory.
 
 ---
 
-## Step 5 — Run migrations and seed against the online database
+## Step 5 — Migrations (and optional one-time seed)
 
-If the API start command already runs `prisma migrate deploy` and seed, skip this.
+The API **start** command already runs `prisma migrate deploy`. Do **not** put `prisma db seed` in the host start command after the database has been seeded once.
 
-From your machine (with the production `DATABASE_URL`):
+If Neon is empty and you need the first admin/roles/COA, run seed **once** from your machine (with production `DATABASE_URL`):
 
 ```bash
 cd apps/api
-set DATABASE_URL=postgresql://USER:PASSWORD@HOST/solar_accounting?schema=public&sslmode=require
+set DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=require
 pnpm exec prisma migrate deploy
 pnpm exec prisma db seed
 ```
@@ -149,12 +149,12 @@ pnpm exec prisma db seed
 On PowerShell:
 
 ```powershell
-$env:DATABASE_URL = "postgresql://USER:PASSWORD@HOST/solar_accounting?schema=public&sslmode=require"
+$env:DATABASE_URL = "postgresql://USER:PASSWORD@HOST/neondb?sslmode=require"
 pnpm --filter @solar/api exec prisma migrate deploy
 pnpm --filter @solar/api exec prisma db seed
 ```
 
-Confirm `system_metadata.schema_version` is `16` (or current) after seed.
+If the database is already seeded, skip this step. Confirm `system_metadata.schema_version` is `16` (or current) when you do seed.
 
 ---
 
