@@ -9,8 +9,6 @@ coverage/
 .env.*.local
 .env.example
 .env.*.locexampleal
-apps/api/dist/
-apps/web/dist/
 .vite/
 *.log
 .DS_Store
