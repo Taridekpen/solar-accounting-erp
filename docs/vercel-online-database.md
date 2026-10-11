@@ -59,11 +59,12 @@ Use Railway, Render, or Fly. Example with **Render** or **Railway**:
 2. Add a **Web Service** for the API. Keep **Root Directory** empty (monorepo root). Do not set it to `apps/api` when using the commands below.
 3. Build and start (seed is **not** part of start — run seed once manually if the DB is empty; skip if already seeded):
    - **Build command:**  
-     `pnpm install --frozen-lockfile --prod=false && pnpm --filter @solar/shared build && pnpm --filter @solar/accounting-rules build && pnpm --filter @solar/api exec prisma generate && pnpm --filter @solar/api build`  
-     `--prod=false` keeps `@nestjs/cli` available so `nest build` writes `apps/api/dist/main.js`. Without that file, start fails with `Cannot find module .../dist/main.js`.
+     `pnpm install --frozen-lockfile --prod=false && pnpm --filter @solar/shared build && pnpm --filter @solar/accounting-rules build && pnpm --filter @solar/api exec prisma generate && pnpm --filter @solar/api build && test -f apps/api/dist/main.js`  
+     `--prod=false` keeps `@nestjs/cli` available so `nest build` writes `apps/api/dist/main.js`. The final `test -f` fails the build early if that file is missing.
    - **Start command:**  
      `pnpm --filter @solar/api start:prod`  
      (runs `prisma migrate deploy`, then `node dist/main.js` — no seed)
+   - **Render note:** Repo [`.gitignore`](../.gitignore) ignores `dist/`. Render would strip that from the deploy upload unless [`.renderignore`](../.renderignore) is present (it replaces `.gitignore` for the upload and intentionally keeps `apps/api/dist`). Commit `.renderignore` before redeploying.
 4. Set environment variables on the API service:
 
    | Variable | Example / notes |

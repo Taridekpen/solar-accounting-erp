@@ -1,0 +1,18 @@
+# Replaces .gitignore for Render's deploy upload.
+# Do NOT ignore apps/api/dist — Nest build output must ship with the service.
+node_modules
+.git
+coverage
+.turbo
+*.tsbuildinfo
+.env
+.env.local
+.env.production
+.env.*.local
+apps/web/dist
+.vite
+*.log
+.DS_Store
+Thumbs.db
+docs/presentations
+*.pptx

@@ -8,7 +8,8 @@ Use [`docker-compose.prod.yml`](../docker-compose.prod.yml) with [`.env.producti
 
 - PostgreSQL is not published on the host by default.
 - The API image target is `production`. On start it runs `prisma migrate deploy`, then `node` via `pnpm --filter @solar/api start` (no seed on boot; seed once manually if the DB is empty).
-- On Render/Railway, use build with `pnpm install --frozen-lockfile --prod=false` and start `pnpm --filter @solar/api start:prod` so `dist/main.js` exists and migrate runs without re-seeding.
+- On Render/Railway, use build with `pnpm install --frozen-lockfile --prod=false` (and `test -f apps/api/dist/main.js`) and start `pnpm --filter @solar/api start:prod` so `dist/main.js` exists and migrate runs without re-seeding.
+- Render: keep [`.renderignore`](../.renderignore) committed so `apps/api/dist` is not dropped from the deploy upload (`.gitignore` alone would exclude it).
 - The web image serves the Vite build through nginx. TLS terminates at nginx using certificates mounted from `TLS_CERT_DIR` (default `./infrastructure/certs`).
 - Set `WEB_ORIGIN` to the public HTTPS origin and keep `COOKIE_SECURE=true` with `NODE_ENV=production` so session cookies are marked Secure.
 

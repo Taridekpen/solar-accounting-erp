@@ -6,11 +6,11 @@ File: [Solar-Accounting-System.pptx](./Solar-Accounting-System.pptx)
 
 Stakeholder overview of the product through Section 16 (architecture, modules, workflows, security, import, deployment).
 
-## How it works — user guide & background
+## How it works — accountant guide
 
 File: [How-It-Works-User-Guide.pptx](./How-It-Works-User-Guide.pptx)
 
-Detailed guide: how to use the app, and what the browser, guards, services, posting engine, and PostgreSQL do for each major action (login, sales, purchases, inventory, expenses, banking, projects, reports, closing, payroll, admin, import).
+Accountant-facing guide: what the platform does, how head office and branches work, how the accounting engine posts and locks the books, and how each module updates ledgers, stock, and reports. Written in business language only (no developer or infrastructure detail).
 
 ### Regenerate
 
@@ -22,6 +22,6 @@ node docs/presentations/build-pptx.mjs
 node docs/presentations/build-how-it-works-pptx.mjs
 ```
 
-Or: `pnpm pptx` (overview) and `pnpm pptx:how-it-works` (this guide).
+Or: `pnpm pptx` (overview) and `pnpm pptx:how-it-works` (accountant guide).
 
 Illustrative images live in [`assets/`](./assets/). Diagrams on the slides are native PowerPoint shapes so they stay editable after generation.
