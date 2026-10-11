@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+.env.example
+.env.*.locexampleal
+apps/api/dist/
+apps/web/dist/
+.vite/
+*.log
+.DS_Store
+Thumbs.db

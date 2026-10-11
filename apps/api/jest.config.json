@@ -1,0 +1,14 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "src",
+  "testRegex": ".*\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "testEnvironment": "node",
+  "moduleNameMapper": {
+    "^@solar/shared$": "<rootDir>/../../../packages/shared/src/index.ts",
+    "^@solar/accounting-rules$": "<rootDir>/../../../packages/accounting-rules/src/index.ts"
+  },
+  "collectCoverageFrom": ["src/**/*.ts", "!src/main.ts"]
+}

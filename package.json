@@ -1,0 +1,21 @@
+{
+  "name": "solar-accounting",
+  "private": true,
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @solar/shared build && pnpm --parallel --filter @solar/api --filter @solar/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm --filter @solar/shared build && pnpm --filter @solar/accounting-rules build && pnpm -r --filter @solar/shared --filter @solar/accounting-rules --filter @solar/api --filter @solar/web typecheck",
+    "db:migrate": "pnpm --filter @solar/api db:migrate",
+    "db:seed": "pnpm --filter @solar/api db:seed",
+    "pptx": "node docs/presentations/build-pptx.mjs",
+    "pptx:how-it-works": "node docs/presentations/build-how-it-works-pptx.mjs"
+  },
+  "devDependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}

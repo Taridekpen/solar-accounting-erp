@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: solar
+          POSTGRES_PASSWORD: solar
+          POSTGRES_DB: solar_accounting
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U solar -d solar_accounting"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://solar:solar@localhost:5433/solar_accounting?schema=public
+      REDIS_URL: redis://localhost:6379
+      WEB_ORIGIN: http://localhost:5173
+      SESSION_SECRET: ci-session-secret-change-before-production-32
+      SEED_ADMIN_EMAIL: admin@solar.local
+      SEED_ADMIN_PASSWORD: SolarDevAdmin-2026
+      LOG_LEVEL: error
+      PORT: 3000
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Create test database
+        run: |
+          PGPASSWORD=solar psql -h localhost -p 5433 -U solar -d solar_accounting -c "SELECT 1" >/dev/null
+          PGPASSWORD=solar psql -h localhost -p 5433 -U solar -d postgres -c "CREATE DATABASE solar_accounting_test;"
+      - name: Migrate and seed
+        run: |
+          pnpm --filter @solar/api exec prisma migrate deploy
+          DATABASE_URL=postgresql://solar:solar@localhost:5433/solar_accounting_test?schema=public pnpm --filter @solar/api exec prisma migrate deploy
+          pnpm db:seed
+          DATABASE_URL=postgresql://solar:solar@localhost:5433/solar_accounting_test?schema=public pnpm --filter @solar/api exec prisma db seed
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit and integration tests
+        run: pnpm test
+      - name: Backup restore
+        run: node infrastructure/scripts/backup-restore.test.mjs
