@@ -162,11 +162,12 @@ If the database is already seeded, skip this step. Confirm `system_metadata.sche
 
 ## Step 6 — Cookie and HTTPS checklist
 
-- API `NODE_ENV=production` so session cookies are `Secure`.
+- API `NODE_ENV=production` so session cookies are `Secure` and `SameSite=None` (required for Vercel web → Render API cross-site login).
 - Web and API both use **HTTPS**.
-- `WEB_ORIGIN` exactly equals the browser origin (scheme + host + port if any).
+- `WEB_ORIGIN` exactly equals the browser origin (scheme + host + port if any), e.g. `https://your-app.vercel.app`.
 - Browser calls use `credentials: "include"` (already in the web client).
-- If the API and web are on different sites, third-party cookie rules can block sessions. Prefer putting the API on a subdomain of the same site later (`api.yourdomain.com` + `app.yourdomain.com`) with cookies scoped carefully, or keep testing on Vercel preview + API host and verify login in the browser DevTools → Application → Cookies.
+- After login, DevTools → Application → Cookies on the API host should show `solar_session` and `solar_csrf`.
+- Prefer a shared parent domain later (`app.yourdomain.com` + `api.yourdomain.com`) when you add a custom domain.
 
 ---
 

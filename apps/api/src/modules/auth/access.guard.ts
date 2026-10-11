@@ -63,9 +63,11 @@ export class AccessGuard implements CanActivate {
 }
 
 export function sessionCookieOptions(secure: boolean) {
+  // Cross-site web (e.g. Vercel) → API (e.g. Render) needs SameSite=None; Secure.
+  // Local HTTP keeps Lax so cookies work without Secure on localhost.
   return {
     httpOnly: true,
-    sameSite: "lax" as const,
+    sameSite: (secure ? "none" : "lax") as "none" | "lax",
     secure,
     path: "/",
     maxAge: 12 * 60 * 60 * 1000,

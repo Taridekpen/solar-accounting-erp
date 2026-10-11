@@ -11,7 +11,7 @@ Use [`docker-compose.prod.yml`](../docker-compose.prod.yml) with [`.env.producti
 - On Render/Railway, use build with `pnpm install --frozen-lockfile --prod=false` (and `test -f apps/api/dist/main.js`) and start `pnpm --filter @solar/api start:prod`.
 - Nest production emit: `apps/api/tsconfig.build.json` uses `"rootDir": "src"` so output is `dist/main.js` (matching `start` / `start:prod`). On Render, clear the build cache after changing this.
 - The web image serves the Vite build through nginx. TLS terminates at nginx using certificates mounted from `TLS_CERT_DIR` (default `./infrastructure/certs`).
-- Set `WEB_ORIGIN` to the public HTTPS origin and keep `COOKIE_SECURE=true` with `NODE_ENV=production` so session cookies are marked Secure.
+- Set `WEB_ORIGIN` to the public HTTPS web origin. With `NODE_ENV=production`, session cookies use `Secure` + `SameSite=None` so a separate web host (e.g. Vercel) can send them to the API.
 
 ### Lab TLS
 
