@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { downloadReport, fetchProfitAndLoss, fetchTrialBalance } from "@/features/reports/api";
 
 export function ReportsPage() {
@@ -14,6 +15,7 @@ export function ReportsPage() {
   const profit = useQuery({ queryKey: ["reports", "profit"], queryFn: () => fetchProfitAndLoss("2026-12-01", "2026-12-31"), enabled: report === "profit" });
   const current = report === "trial" ? trial.data : profit.data;
   const error = report === "trial" ? trial.isError : profit.isError;
+  const loading = report === "trial" ? trial.isLoading : profit.isLoading;
 
   return (
     <section className="space-y-4 print:space-y-2">
@@ -34,8 +36,9 @@ export function ReportsPage() {
         {current ? <p className="text-xs text-muted">Generated {current.generatedAt} · Prepared by {current.preparedBy}</p> : null}
       </div>
       {error ? <ErrorState message="The report could not be loaded." /> : null}
-      {report === "trial" && trial.data && trial.data.rows.length === 0 ? <Card><EmptyState title="No posted balances" description="The trial balance lists each account once journals are posted." /></Card> : null}
-      {report === "trial" && trial.data && trial.data.rows.length > 0 ? (
+      {loading ? <PageLoader label="Loading report…" /> : null}
+      {!loading && report === "trial" && trial.data && trial.data.rows.length === 0 ? <Card><EmptyState title="No posted balances" description="The trial balance lists each account once journals are posted." /></Card> : null}
+      {!loading && report === "trial" && trial.data && trial.data.rows.length > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted"><tr><th className="px-4 py-3">Code</th><th className="px-4 py-3">Account</th><th className="px-4 py-3 text-right">Debit balance</th><th className="px-4 py-3 text-right">Credit balance</th></tr></thead>
@@ -57,7 +60,7 @@ export function ReportsPage() {
           </table>
         </Card>
       ) : null}
-      {report === "profit" && profit.data ? (
+      {!loading && report === "profit" && profit.data ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <tbody>

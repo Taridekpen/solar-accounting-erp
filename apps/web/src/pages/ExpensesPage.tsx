@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { createExpense, fetchExpenseCategories, fetchExpenseReports, fetchExpenses } from "@/features/expenses/api";
 import { fetchBranches } from "@/features/organization/api";
 
@@ -53,10 +54,11 @@ export function ExpensesPage() {
         <Button variant={section === "reports" ? "primary" : "secondary"} onClick={() => setSection("reports")}>Reports</Button>
       </div>
       {expenses.isError ? <ErrorState message="Expenses could not be loaded." /> : null}
-      {section === "list" && (expenses.data?.data.length ?? 0) === 0 ? (
+      {section === "list" && expenses.isLoading ? <PageLoader label="Loading expenses…" /> : null}
+      {section === "list" && !expenses.isLoading && (expenses.data?.data.length ?? 0) === 0 ? (
         <Card><EmptyState title="No expenses" description="A draft stores the receipt. Approval posts the accrual, and a different user records payment." /></Card>
       ) : null}
-      {section === "list" && (expenses.data?.data.length ?? 0) > 0 ? (
+      {section === "list" && !expenses.isLoading && (expenses.data?.data.length ?? 0) > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">
@@ -80,7 +82,8 @@ export function ExpensesPage() {
           </table>
         </Card>
       ) : null}
-      {section === "reports" ? (
+      {section === "reports" && reports.isLoading ? <PageLoader label="Loading expense reports…" /> : null}
+      {section === "reports" && !reports.isLoading ? (
         <Card className="space-y-3 p-4 text-sm">
           <p>Pending {reports.data?.pending.length ?? 0}</p>
           <p>Unpaid approved {reports.data?.unpaid.length ?? 0}</p>

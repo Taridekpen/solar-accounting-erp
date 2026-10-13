@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { PageLoader } from "@/components/ui/page-loader";
 import { createDepartment, fetchBranches, fetchDepartments } from "@/features/organization/api";
 
 const schema = z.object({
@@ -49,10 +50,11 @@ export function DepartmentsPage() {
       </div>
       <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search departments" aria-label="Search departments" />
       {departments.isError ? <ErrorState message="Departments could not be loaded." onRetry={() => void departments.refetch()} /> : null}
-      {departments.data && rows.length === 0 ? (
+      {departments.isLoading ? <PageLoader label="Loading departments…" /> : null}
+      {!departments.isLoading && departments.data && rows.length === 0 ? (
         <Card><EmptyState title="No departments" description="Departments can be company-wide or limited to one branch." /></Card>
       ) : null}
-      {rows.length > 0 ? (
+      {!departments.isLoading && rows.length > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">

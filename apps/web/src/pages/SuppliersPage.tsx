@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchBranches } from "@/features/organization/api";
 import { createSupplier, fetchSupplierStatement, fetchSuppliers, updateSupplier, type SupplierRecord } from "@/features/procurement/api";
 
@@ -81,10 +82,11 @@ export function SuppliersPage() {
       </div>
       <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search suppliers" aria-label="Search suppliers" />
       {suppliers.isError ? <ErrorState message="Suppliers could not be loaded." onRetry={() => void suppliers.refetch()} /> : null}
-      {suppliers.data && rows.length === 0 ? (
+      {suppliers.isLoading ? <PageLoader label="Loading suppliers…" /> : null}
+      {!suppliers.isLoading && suppliers.data && rows.length === 0 ? (
         <Card><EmptyState title="No suppliers" description="Add a supplier before raising a purchase order." /></Card>
       ) : null}
-      {rows.length > 0 ? (
+      {!suppliers.isLoading && rows.length > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">
@@ -161,7 +163,7 @@ export function SuppliersPage() {
               <p key={bill.id}>{bill.billNumber} · {bill.supplierInvoiceNumber} · open <MoneyValue amount={bill.openBalance} /></p>
             ))}
           </div>
-        ) : <p className="text-sm text-muted">Loading statement…</p>}
+        ) : <PageLoader label="Loading statement…" className="border-0 py-10 shadow-none" />}
       </Modal>
     </div>
   );

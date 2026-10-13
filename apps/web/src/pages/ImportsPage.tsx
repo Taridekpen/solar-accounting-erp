@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   IMPORT_TYPE_OPTIONS,
   approveImport,
@@ -87,6 +88,7 @@ export function ImportsPage() {
         </p>
       </div>
       {batches.isError ? <ErrorState message="Import batches could not be loaded." /> : null}
+      {batches.isLoading ? <PageLoader label="Loading import batches…" /> : null}
       {message ? <p className="text-sm text-muted">{message}</p> : null}
 
       <Card className="space-y-3 p-4">
@@ -166,7 +168,7 @@ export function ImportsPage() {
         </Card>
       ) : null}
 
-      {batches.data ? (
+      {!batches.isLoading && batches.data ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">

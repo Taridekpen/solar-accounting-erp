@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchBranches } from "@/features/organization/api";
 import { fetchRoles, fetchUserSessions, fetchUsers, inviteUser, revokeSession, suspendUser, updateUser } from "@/features/auth/api";
 
@@ -83,6 +84,8 @@ export function UsersPage() {
         <Button onClick={() => { setToken(null); setFormError(null); setOpen(true); }}>Invite staff</Button>
       </div>
       {users.isError ? <ErrorState message="Users could not be loaded." onRetry={() => void users.refetch()} /> : null}
+      {users.isLoading ? <PageLoader label="Loading users…" /> : null}
+      {!users.isLoading ? (
       <Card className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">
           <thead className="text-muted">
@@ -114,6 +117,7 @@ export function UsersPage() {
           </tbody>
         </table>
       </Card>
+      ) : null}
       {selectedId ? (
         <Card className="space-y-3 p-4">
           <h2 className="text-lg font-semibold">Assignments and sessions</h2>

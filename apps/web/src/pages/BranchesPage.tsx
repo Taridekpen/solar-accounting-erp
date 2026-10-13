@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchBranchSettings } from "@/features/admin/api";
 import { createBranch, fetchBranches, fetchEmployees, updateBranch, updateBranchStatus, type BranchRecord } from "@/features/organization/api";
 import { useUi } from "@/stores/ui-context";
@@ -92,12 +93,13 @@ export function BranchesPage() {
       </div>
       <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search branches" aria-label="Search branches" />
       {branches.isError ? <ErrorState message="Branches could not be loaded." onRetry={() => void branches.refetch()} /> : null}
-      {branches.data && rows.length === 0 ? (
+      {branches.isLoading ? <PageLoader label="Loading branches…" /> : null}
+      {!branches.isLoading && branches.data && rows.length === 0 ? (
         <Card>
           <EmptyState title="No branches" description="Add a branch to start recording activity for a location." />
         </Card>
       ) : null}
-      {rows.length > 0 ? (
+      {!branches.isLoading && rows.length > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">
@@ -235,7 +237,7 @@ export function BranchesPage() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-muted">Loading…</p>
+          <PageLoader label="Loading branch settings…" className="border-0 py-10 shadow-none" />
         )}
       </Modal>
       <p className="text-sm text-muted">

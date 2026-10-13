@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useAuth } from "@/features/auth/auth-context";
 import { fetchBankAccounts, fetchBankStatements, fetchCashBook, fetchCashDrawers } from "@/features/banking/api";
 
@@ -31,7 +32,8 @@ export function BankingPage() {
         <Button variant={section === "statements" ? "primary" : "secondary"} onClick={() => setSection("statements")}>Statements</Button>
       </div>
       {accounts.isError ? <ErrorState message="Banking could not be loaded." /> : null}
-      {section === "accounts" ? (
+      {section === "accounts" && (accounts.isLoading || drawers.isLoading) ? <PageLoader label="Loading banking…" /> : null}
+      {section === "accounts" && !accounts.isLoading && !drawers.isLoading ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="space-y-3 p-4">
             <h2 className="font-medium">Bank accounts</h2>
@@ -62,7 +64,8 @@ export function BankingPage() {
           </Card>
         </div>
       ) : null}
-      {section === "cash-book" ? (
+      {section === "cash-book" && cashBook.isLoading ? <PageLoader label="Loading cash book…" /> : null}
+      {section === "cash-book" && !cashBook.isLoading ? (
         <Card className="space-y-3 p-4 text-sm">
           <p>Opening <MoneyValue amount={cashBook.data?.opening ?? "0.0000"} /></p>
           <p>Receipts <MoneyValue amount={cashBook.data?.receipts ?? "0.0000"} /></p>
@@ -73,7 +76,8 @@ export function BankingPage() {
           )}
         </Card>
       ) : null}
-      {section === "statements" ? (
+      {section === "statements" && statements.isLoading ? <PageLoader label="Loading statements…" /> : null}
+      {section === "statements" && !statements.isLoading ? (
         <Card className="p-4">
           {(statements.data?.length ?? 0) === 0 ? <EmptyState title="No statements" description="A draft statement can be matched to posted bank lines and then locked." /> : (
             <ul className="space-y-2 text-sm">

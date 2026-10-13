@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { PageLoader } from "@/components/ui/page-loader";
 import { createEmployee, fetchBranches, fetchDepartments, fetchEmployees, updateEmployee } from "@/features/organization/api";
 
 const schema = z.object({
@@ -77,10 +78,11 @@ export function EmployeesPage() {
       </div>
       <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search employees" aria-label="Search employees" />
       {employees.isError ? <ErrorState message="Employees could not be loaded." onRetry={() => void employees.refetch()} /> : null}
-      {employees.data && rows.length === 0 ? (
+      {employees.isLoading ? <PageLoader label="Loading employees…" /> : null}
+      {!employees.isLoading && employees.data && rows.length === 0 ? (
         <Card><EmptyState title="No employees" description="Employee records identify branch staff. Payroll amounts are not stored here." /></Card>
       ) : null}
-      {rows.length > 0 ? (
+      {!employees.isLoading && rows.length > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">

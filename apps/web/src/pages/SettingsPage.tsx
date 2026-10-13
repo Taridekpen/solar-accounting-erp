@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import {
   fetchAccountMappings,
   fetchAdminTaxCodes,
@@ -137,6 +138,8 @@ export function SettingsPage() {
       {section === "company" ? (
         <Card className="p-5">
           {company.isError ? <ErrorState message="The company profile could not be loaded." onRetry={() => void company.refetch()} /> : null}
+          {company.isLoading ? <PageLoader label="Loading company…" className="border-0 py-10 shadow-none" /> : null}
+          {!company.isLoading ? (
           <form
             className="grid gap-3 sm:grid-cols-2"
             onSubmit={form.handleSubmit((values) =>
@@ -227,6 +230,7 @@ export function SettingsPage() {
               </div>
             ) : null}
           </form>
+          ) : null}
           <TemplatesPanel canManage={canManage} />
         </Card>
       ) : null}

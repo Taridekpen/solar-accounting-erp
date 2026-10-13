@@ -3,6 +3,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchClosingPeriods, fetchDailyClosing } from "@/features/closing/api";
 
 const FIGURES = [
@@ -30,7 +31,8 @@ export function ClosingPage() {
         <p className="text-sm text-muted">Period status and the daily report come from the accounting records.</p>
       </div>
       {periods.isError || daily.isError ? <ErrorState message="The closing records could not be loaded." /> : null}
-      {daily.data ? (
+      {periods.isLoading || daily.isLoading ? <PageLoader label="Loading closing…" /> : null}
+      {!daily.isLoading && daily.data ? (
         <Card className="space-y-3 p-4">
           <h2 className="font-medium">{daily.data.branchName} · {daily.data.businessDate}</h2>
           <p className="text-sm text-muted">Status {daily.data.status}. Inventory exceptions {daily.data.report.inventoryExceptions}. Pending approvals {daily.data.report.pendingApprovals}.</p>
@@ -44,7 +46,7 @@ export function ClosingPage() {
           </dl>
         </Card>
       ) : null}
-      {periods.data ? (
+      {!periods.isLoading && periods.data ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted"><tr><th className="px-4 py-3">From</th><th className="px-4 py-3">To</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Tasks</th></tr></thead>

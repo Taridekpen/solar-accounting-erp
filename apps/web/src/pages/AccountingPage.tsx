@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useAuth } from "@/features/auth/auth-context";
 import {
   approveJournal,
@@ -99,6 +100,8 @@ export function AccountingPage() {
         </p>
       </div>
       {review.isError ? <ErrorState message="The accounting workspace could not be loaded." onRetry={() => void review.refetch()} /> : null}
+      {review.isLoading ? <PageLoader label="Loading accounting…" /> : null}
+      {!review.isLoading ? (
       <div className="grid gap-4 lg:grid-cols-2">
         <Queue title="Recently posted" rows={review.data?.posted ?? []} />
         <Queue title="Manual journal requests" rows={review.data?.manualRequests ?? []} onApprove={(id) => approve.mutate(id)} />
@@ -107,6 +110,7 @@ export function AccountingPage() {
         <AttemptList title="Failed posting attempts" rows={review.data?.failedAttempts ?? []} />
         <AttemptList title="Suspicious entries" rows={review.data?.suspicious ?? []} />
       </div>
+      ) : null}
       {approve.error ? <p className="text-sm text-rose-600">{approve.error.message}</p> : null}
       <Card className="space-y-3 p-4">
         <h2 className="text-lg font-semibold">Manual journal</h2>

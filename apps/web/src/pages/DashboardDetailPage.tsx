@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchDashboardDetails } from "@/services/api-client";
 import { useUi } from "@/stores/ui-context";
 
@@ -55,10 +56,11 @@ export function DashboardDetailPage() {
         <Link to="/" className="text-sm text-primary">Back to dashboard</Link>
       </div>
       {detail.isError ? <ErrorState message="This dashboard detail could not be loaded." onRetry={() => void detail.refetch()} /> : null}
-      {detail.data?.kind === "empty" ? (
+      {detail.isLoading ? <PageLoader label="Loading detail…" /> : null}
+      {!detail.isLoading && detail.data?.kind === "empty" ? (
         <EmptyState title="No source records" description="This figure stays empty until its module posts records." />
       ) : null}
-      {detail.data && detail.data.kind !== "empty" ? (
+      {!detail.isLoading && detail.data && detail.data.kind !== "empty" ? (
         <Card className="overflow-x-auto p-4">
           <p className="text-sm text-muted">
             Total {detail.data.kind === "money" ? <MoneyValue amount={detail.data.total} /> : detail.data.total}

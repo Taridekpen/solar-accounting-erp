@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import type { AppPermission } from "@/app/navigation";
 import { navigation } from "@/app/navigation";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useAuth } from "@/features/auth/auth-context";
 import { AppShell } from "@/layouts/AppShell";
 import { AccountingPage } from "@/pages/AccountingPage";
@@ -85,7 +86,11 @@ function pageFor(path: string) {
 function ProtectedShell() {
   const { session, isLoading } = useAuth();
   if (isLoading) {
-    return <p className="p-6 text-sm text-muted">Loading account…</p>;
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-canvas p-6">
+        <PageLoader label="Loading account…" className="w-full max-w-md border-0 bg-transparent shadow-none" />
+      </div>
+    );
   }
   if (!session || session.mfaPending) {
     return <Navigate to="/login" replace />;

@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { createCount, createTransfer, fetchReports, fetchStock, lookupSerial, type SerialRecord } from "@/features/inventory/api";
 import { fetchBranches } from "@/features/organization/api";
 import { fetchWarehouses, type WarehouseRecord } from "@/features/procurement/api";
@@ -88,7 +89,8 @@ export function InventoryPage() {
         ))}
       </div>
       {stock.isError || reports.isError ? <ErrorState message="Inventory could not be loaded." /> : null}
-      {section === "stock" ? (
+      {section === "stock" && stock.isLoading ? <PageLoader label="Loading inventory…" /> : null}
+      {section === "stock" && !stock.isLoading ? (
         (stock.data?.length ?? 0) === 0 ? (
           <Card><EmptyState title="No warehouse stock" description="Receipts and opening balances will appear here by warehouse." /></Card>
         ) : (
@@ -120,7 +122,8 @@ export function InventoryPage() {
           </Card>
         )
       ) : null}
-      {section === "transfers" ? (
+      {section === "transfers" && reports.isLoading ? <PageLoader label="Loading transfers…" /> : null}
+      {section === "transfers" && !reports.isLoading ? (
         <Card className="space-y-3 p-4">
           <p className="text-sm text-muted">Open transfers stay here until they are received. Company inventory value does not change while stock is in transit.</p>
           <p className="text-sm">Valuation <MoneyValue amount={reports.data?.valuation ?? "0.0000"} /></p>

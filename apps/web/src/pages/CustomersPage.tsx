@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchBranches } from "@/features/organization/api";
 import { createCustomer, fetchCustomers, fetchStatement, updateCustomer, type CustomerRecord } from "@/features/sales/api";
 
@@ -78,10 +79,11 @@ export function CustomersPage() {
       </div>
       <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search customers" aria-label="Search customers" />
       {customers.isError ? <ErrorState message="Customers could not be loaded." onRetry={() => void customers.refetch()} /> : null}
-      {customers.data && rows.length === 0 ? (
+      {customers.isLoading ? <PageLoader label="Loading customers…" /> : null}
+      {!customers.isLoading && customers.data && rows.length === 0 ? (
         <Card><EmptyState title="No customers" description="Add a customer before creating a quotation or invoice." /></Card>
       ) : null}
-      {rows.length > 0 ? (
+      {!customers.isLoading && rows.length > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">
@@ -164,7 +166,7 @@ export function CustomersPage() {
               <p key={invoice.id}>{invoice.invoiceNumber} · open <MoneyValue amount={invoice.openBalance} /></p>
             ))}
           </div>
-        ) : <p className="text-sm text-muted">Loading statement…</p>}
+        ) : <PageLoader label="Loading statement…" className="border-0 py-10 shadow-none" />}
       </Modal>
     </div>
   );

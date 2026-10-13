@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/page-loader";
 import { enrollMfa, login, verifyMfa } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/auth-context";
 
@@ -88,7 +89,8 @@ export function LoginPage() {
           ) : null}
           {secret ? <p className="text-sm">Enrollment secret: <span className="font-mono">{secret}</span></p> : null}
           {message ? <p className="text-sm text-rose-600">{message}</p> : null}
-          <Button type="submit" disabled={signIn.isPending || confirmMfa.isPending}>
+          <Button type="submit" disabled={signIn.isPending || confirmMfa.isPending} className="inline-flex items-center justify-center gap-2">
+            {signIn.isPending || confirmMfa.isPending ? <Spinner className="h-4 w-4" /> : null}
             {mfaStep === "enroll" ? "Enable authenticator" : "Sign in"}
           </Button>
         </form>

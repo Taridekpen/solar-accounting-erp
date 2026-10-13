@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchBranches } from "@/features/organization/api";
 import {
   approveOrder,
@@ -161,6 +162,8 @@ export function PurchasesPage() {
 
   const rows = section === "requisitions" ? (requisitions.data?.data ?? []) : (orders.data?.data ?? []);
   const loadingError = orders.isError || requisitions.isError;
+  const listLoading =
+    section === "requisitions" ? requisitions.isLoading : section === "orders" ? orders.isLoading : false;
 
   return (
     <div className="space-y-4">
@@ -176,10 +179,11 @@ export function PurchasesPage() {
       </div>
       {formError && !open && !receiptOpen && !billOpen ? <p className="text-sm text-rose-600">{formError}</p> : null}
       {loadingError ? <ErrorState message="Purchases could not be loaded." onRetry={() => void orders.refetch()} /> : null}
-      {rows.length === 0 && (section === "orders" || section === "requisitions") ? (
+      {listLoading ? <PageLoader label="Loading purchases…" /> : null}
+      {!listLoading && rows.length === 0 && (section === "orders" || section === "requisitions") ? (
         <Card><EmptyState title={`No ${section}`} description="Save a draft, preview the API totals, then submit it for approval." /></Card>
       ) : null}
-      {section === "orders" && (orders.data?.data.length ?? 0) > 0 ? (
+      {!listLoading && section === "orders" && (orders.data?.data.length ?? 0) > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">
@@ -212,7 +216,7 @@ export function PurchasesPage() {
           </table>
         </Card>
       ) : null}
-      {section === "requisitions" && (requisitions.data?.data.length ?? 0) > 0 ? (
+      {!listLoading && section === "requisitions" && (requisitions.data?.data.length ?? 0) > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted"><tr><th className="px-4 py-3 font-medium">Number</th><th className="px-4 py-3 font-medium">Purpose</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3 text-right font-medium">Estimate</th></tr></thead>

@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchBranches } from "@/features/organization/api";
 import { createProject, fetchProjects } from "@/features/projects/api";
 import { fetchCustomers } from "@/features/sales/api";
@@ -69,10 +70,11 @@ export function ProjectsPage() {
         <Button onClick={() => { setFormError(null); setOpen(true); }}>New project</Button>
       </div>
       {projects.isError ? <ErrorState message="Projects could not be loaded." /> : null}
+      {projects.isLoading ? <PageLoader label="Loading projects…" /> : null}
       {(projects.data?.length ?? 0) === 0 && !projects.isLoading ? (
         <Card><EmptyState title="No projects" description="A draft stores the contract. Materials, deposits, and milestones post only after they are approved." /></Card>
       ) : null}
-      {(projects.data?.length ?? 0) > 0 ? (
+      {!projects.isLoading && (projects.data?.length ?? 0) > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">

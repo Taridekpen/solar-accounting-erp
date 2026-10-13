@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { fetchBranches } from "@/features/organization/api";
 import {
   createInvoice,
@@ -157,6 +158,14 @@ export function SalesPage() {
       : section === "receipts"
         ? receipts.data?.data ?? []
         : returns.data?.data ?? [];
+  const sectionLoading =
+    section === "invoices"
+      ? invoices.isLoading
+      : section === "quotations"
+        ? quotations.isLoading
+        : section === "receipts"
+          ? receipts.isLoading
+          : returns.isLoading;
 
   return (
     <div className="space-y-4">
@@ -177,9 +186,11 @@ export function SalesPage() {
         <Button type="button" variant={section === "returns" ? "primary" : "secondary"} onClick={() => setSection("returns")}>Returns</Button>
       </div>
       {(invoices.isError || quotations.isError) ? <ErrorState message="Sales documents could not be loaded." onRetry={() => void invoices.refetch()} /> : null}
-      {rows.length === 0 ? (
+      {sectionLoading ? <PageLoader label="Loading sales…" /> : null}
+      {!sectionLoading && rows.length === 0 ? (
         <Card><EmptyState title={`No ${section}`} description="Create a draft, preview the API totals, then finalize when the sale is agreed." /></Card>
-      ) : (
+      ) : null}
+      {!sectionLoading && rows.length > 0 ? (
         <Card className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-muted">
@@ -236,7 +247,7 @@ export function SalesPage() {
             </tbody>
           </table>
         </Card>
-      )}
+      ) : null}
       <Modal open={open} title="New invoice" onOpenChange={setOpen}>
         <div className="space-y-3">
           <label className="block text-sm">Branch
