@@ -33,7 +33,7 @@ export function Sidebar({ permissions }: { permissions: "all" | readonly AppPerm
           </div>
           {sidebarCollapsed ? null : (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">Solar & Inverter Co.</p>
+              <p className="truncate text-sm font-semibold text-white">AFRO TEL SOLAR</p>
             </div>
           )}
         </div>
