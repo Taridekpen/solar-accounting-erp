@@ -100,7 +100,8 @@ describe("expenses and approval", () => {
     expect(accrual.find((line) => line.account.accountCode === "6100")?.debit.toFixed(4)).toBe("100000.0000");
     expect(accrual.find((line) => line.account.accountCode === "2200")?.credit.toFixed(4)).toBe("100000.0000");
     const kept = await expenses.receipt(clerk, draft.id);
-    expect(kept.receiptBase64).toBe(receipt);
+    expect(Buffer.from(kept.content).toString("base64")).toBe(receipt);
+    expect(Buffer.compare(kept.content, Buffer.from(receipt, "base64"))).toBe(0);
     await expect(expenses.receipt(outsider, draft.id)).rejects.toBeInstanceOf(NotFoundException);
 
     const large = await expenses.create(clerk, expenseInput(branchId, fuel.id, "600000.0000", "July fuel", receipt));

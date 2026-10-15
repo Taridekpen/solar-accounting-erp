@@ -65,7 +65,7 @@ export function BranchesPage() {
         email: values.email || undefined,
         isHeadOffice: values.isHeadOffice || undefined,
         managerId: values.managerId || undefined,
-        status: values.status || undefined,
+        ...(editing ? { status: values.status || undefined } : {}),
       };
       return editing ? updateBranch(editing.id, body) : createBranch({ ...body, branchCode: values.branchCode });
     },

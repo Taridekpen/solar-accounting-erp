@@ -13,6 +13,15 @@ export function setActiveBranchFilter(branchIds: string[]) {
   activeBranchIds = branchIds;
 }
 
+/** Headers for authenticated binary fetches (receipts, downloads) outside apiRequest. */
+export function apiFetchHeaders(init?: HeadersInit): Headers {
+  const headers = new Headers(init);
+  if (activeBranchIds.length > 0 && !headers.has("X-Branch-Ids")) {
+    headers.set("X-Branch-Ids", activeBranchIds.join(","));
+  }
+  return headers;
+}
+
 /** Remember CSRF from login (or other) JSON — required when web and API are on different hosts. */
 export function setCsrfToken(token: string | undefined) {
   csrfFromApi = token || undefined;

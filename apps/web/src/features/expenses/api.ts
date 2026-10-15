@@ -1,4 +1,4 @@
-import { apiRequest } from "@/services/api-client";
+import { apiBaseUrl, apiFetchHeaders, apiRequest } from "@/services/api-client";
 import type { PageResult } from "@/features/organization/api";
 
 export interface ExpenseRecord {
@@ -16,6 +16,7 @@ export interface ExpenseRecord {
   total: string;
   status: string;
   receiptName: string;
+  createdByUserId: string;
 }
 
 export interface ExpenseCategory {
@@ -48,4 +49,34 @@ export function fetchExpenseReports() {
 
 export function createExpense(body: Record<string, unknown>) {
   return apiRequest<ExpenseRecord>("/expenses", { method: "POST", body: JSON.stringify(body) });
+}
+
+export function submitExpense(id: string) {
+  return apiRequest<ExpenseRecord>(`/expenses/${id}/submit`, { method: "POST" });
+}
+
+export function approveExpense(id: string) {
+  return apiRequest<ExpenseRecord>(`/expenses/${id}/approve`, { method: "POST" });
+}
+
+export function rejectExpense(id: string) {
+  return apiRequest<ExpenseRecord>(`/expenses/${id}/reject`, { method: "POST" });
+}
+
+export function payExpense(id: string, body: { paymentAccountId: string; paymentDate: string }) {
+  return apiRequest<ExpenseRecord>(`/expenses/${id}/pay`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function fetchExpenseReceipt(id: string): Promise<{ blob: Blob; fileName: string; mimeType: string }> {
+  const response = await fetch(`${apiBaseUrl()}/expenses/${id}/receipt`, {
+    credentials: "include",
+    headers: apiFetchHeaders(),
+  });
+  if (!response.ok) throw new Error("The receipt could not be loaded");
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = /filename="([^"]+)"/i.exec(disposition);
+  const fileName = match?.[1] || "receipt";
+  const mimeType = response.headers.get("Content-Type") || blob.type || "application/octet-stream";
+  return { blob, fileName, mimeType };
 }

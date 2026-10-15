@@ -34,6 +34,12 @@ export class ProjectsController {
   }
 
   @RequirePermissions("projects.create")
+  @Post(":id/activate")
+  activate(@Req() request: ProjectRequest, @Param("id", ParseUUIDPipe) id: string) {
+    return this.projects.activate(request.access, id);
+  }
+
+  @RequirePermissions("projects.create")
   @Post(":id/deposits")
   deposit(@Req() request: ProjectRequest, @Param("id", ParseUUIDPipe) id: string, @Body() body: CreateProjectDepositDto) {
     return this.projects.deposit(request.access, id, body, request.correlationId);

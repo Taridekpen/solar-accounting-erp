@@ -52,7 +52,59 @@ export class ProjectsService {
   }
 
   async get(access: AccessContext, id: string) {
-    return this.present(await this.project(access, id));
+    const project = await this.project(access, id);
+    const base = await this.present(project);
+    const [materials, milestones] = await Promise.all([
+      this.prisma.projectMaterialRequest.findMany({
+        where: { projectId: project.id },
+        include: { product: true, warehouse: true },
+        orderBy: { createdAt: "asc" },
+      }),
+      this.prisma.projectMilestone.findMany({
+        where: { projectId: project.id },
+        orderBy: { sequence: "asc" },
+      }),
+    ]);
+    return {
+      ...base,
+      materials: materials.map((row) => ({
+        id: row.id,
+        productName: row.product.name,
+        sku: row.product.sku,
+        warehouseName: row.warehouse.name,
+        quantity: row.quantity.toFixed(4),
+        status: row.status,
+        createdByUserId: row.createdByUserId,
+      })),
+      milestones: milestones.map((row) => ({
+        id: row.id,
+        name: row.name,
+        amount: formatMoneyUnits(parseMoney(row.amount.toFixed(4))),
+        sequence: row.sequence,
+        status: row.status,
+        createdByUserId: row.createdByUserId,
+      })),
+    };
+  }
+
+  async activate(access: AccessContext, id: string) {
+    const project = await this.project(access, id);
+    if (project.status !== "draft") {
+      throw new BadRequestException("Only a draft project can be activated");
+    }
+    const saved = await this.prisma.project.update({
+      where: { id: project.id },
+      data: { status: "active" },
+      include: { customer: true },
+    });
+    await this.audit.record({
+      actorUserId: access.userId,
+      action: "projects.activated",
+      entityType: "project",
+      entityId: project.id,
+      newValues: { status: "active" },
+    });
+    return this.get(access, saved.id);
   }
 
   async create(access: AccessContext, input: CreateProjectDto) {

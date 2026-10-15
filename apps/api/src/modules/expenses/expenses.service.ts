@@ -9,6 +9,7 @@ import { DocumentNumberService } from "../organization/document-number.service";
 import { assertBranchAllowed, branchIdFilter } from "../organization/branch-scope";
 import { PageQueryDto, pageWindow } from "../organization/dto/page-query.dto";
 import { moneyText } from "../sales/sales-math";
+import { decodeBase64ToBytes, mimeTypeFromFileName } from "../../common/base64-bytes";
 import { CreateExpenseBudgetDto, CreateExpenseDto, CreateExpensePolicyDto, ExpenseReportQueryDto, PayExpenseDto } from "./expenses.dto";
 
 const BLOCKED_SUBTYPES = new Set(["inventory", "fixed_asset", "contra_asset", "grni"]);
@@ -245,9 +246,11 @@ export class ExpensesService {
 
   async receipt(access: AccessContext, id: string) {
     const expense = await this.find(access, id);
+    const content = Buffer.from(expense.receiptData);
     return {
       receiptName: expense.receiptName,
-      receiptBase64: Buffer.from(expense.receiptData).toString("base64"),
+      mimeType: mimeTypeFromFileName(expense.receiptName),
+      content,
     };
   }
 
@@ -504,6 +507,7 @@ function serializeExpense(expense: {
   receiptName: string;
   supplierId: string | null;
   employeeId: string | null;
+  createdByUserId: string;
 }) {
   return {
     id: expense.id,
@@ -525,6 +529,7 @@ function serializeExpense(expense: {
     receiptName: expense.receiptName,
     supplierId: expense.supplierId,
     employeeId: expense.employeeId,
+    createdByUserId: expense.createdByUserId,
   };
 }
 
@@ -538,11 +543,7 @@ function group<T extends { amount: { toFixed(digits: number): string }; taxAmoun
 }
 
 function decodeReceipt(value: string) {
-  const receipt = Buffer.from(value, "base64");
-  if (receipt.length === 0 || receipt.length > 1_000_000) {
-    throw new BadRequestException("The receipt must be a file of 1 MB or less");
-  }
-  return receipt;
+  return decodeBase64ToBytes(value, 1_000_000, "receipt");
 }
 
 function monthStart(date: Date) {

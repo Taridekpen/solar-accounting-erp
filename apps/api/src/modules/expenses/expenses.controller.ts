@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Req, Res, StreamableFile } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
+import type { Response } from "express";
 import { AccessContext } from "../auth/access";
 import { RequirePermissions } from "../auth/decorators";
 import { PageQueryDto } from "../organization/dto/page-query.dto";
@@ -36,8 +37,15 @@ export class ExpensesController {
 
   @RequirePermissions("expenses.view")
   @Get(":id/receipt")
-  receipt(@Param("id", ParseUUIDPipe) id: string, @Req() request: ExpenseRequest) {
-    return this.expenses.receipt(request.access, id);
+  async receipt(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Req() request: ExpenseRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.expenses.receipt(request.access, id);
+    response.setHeader("Content-Type", file.mimeType);
+    response.setHeader("Content-Disposition", `inline; filename="${file.receiptName.replace(/"/g, "")}"`);
+    return new StreamableFile(file.content);
   }
 
   @RequirePermissions("expenses.approve")
