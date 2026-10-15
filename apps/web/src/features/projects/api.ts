@@ -84,7 +84,7 @@ export function issueMaterial(projectId: string, requestId: string, accountingDa
 }
 
 export function addMilestone(projectId: string, body: { name: string; amount: string; sequence: number }) {
-  return apiRequest<{ id: string; name: string; amount: string; status: string }>(`/projects/${projectId}/milestones`, {
+  return apiRequest<ProjectMilestoneRow>(`/projects/${projectId}/milestones`, {
     method: "POST",
     body: JSON.stringify(body),
   });

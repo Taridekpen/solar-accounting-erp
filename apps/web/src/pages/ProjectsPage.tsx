@@ -24,6 +24,8 @@ import {
   fetchProjects,
   issueMaterial,
   recognizeMilestone,
+  type ProjectDetail,
+  type ProjectMilestoneRow,
 } from "@/features/projects/api";
 import { fetchCustomers, fetchProducts } from "@/features/sales/api";
 
@@ -124,7 +126,16 @@ export function ProjectsPage() {
       setDetailError(null);
       await refreshDetail();
     },
-    onError: (error: Error) => setDetailError(error.message),
+    onError: (error: Error & { status?: number }) => {
+      const message = error.message;
+      if (error.status === 404 || /404|Cannot POST|not found/i.test(message)) {
+        setDetailError(
+          "Activate is not available on the API yet. Redeploy the API service (commit with POST /projects/:id/activate), or create the project with “Start as active”.",
+        );
+        return;
+      }
+      setDetailError(message);
+    },
   });
   const activateOk = useActionSuccess(activate);
 
@@ -161,18 +172,45 @@ export function ProjectsPage() {
   });
   const issueMatFx = useKeyedActionSuccess(issueMat);
 
+  const mergeMilestoneIntoDetail = (created: ProjectMilestoneRow) => {
+    if (!detailId) return;
+    queryClient.setQueryData<ProjectDetail>(["projects", detailId], (current) => {
+      if (!current) return current;
+      const existing = current.milestones ?? [];
+      if (existing.some((row) => row.id === created.id)) {
+        return { ...current, milestones: existing };
+      }
+      const row: ProjectMilestoneRow = {
+        id: created.id,
+        name: created.name,
+        amount: created.amount,
+        sequence: created.sequence ?? Number(milestoneSequence) || existing.length + 1,
+        status: created.status ?? "pending",
+        createdByUserId: created.createdByUserId ?? userId ?? "",
+      };
+      return {
+        ...current,
+        milestones: [...existing, row].sort((a, b) => a.sequence - b.sequence),
+      };
+    });
+  };
+
   const createMile = useMutation({
     mutationFn: () => addMilestone(detailId!, {
       name: milestoneName,
       amount: milestoneAmount,
       sequence: Number(milestoneSequence),
     }),
-    onSuccess: async () => {
+    onSuccess: async (created) => {
       setDetailError(null);
       setMilestoneName("");
       setMilestoneAmount("");
-      setMilestoneSequence(String((detail.data?.milestones?.length ?? 0) + 2));
+      const nextSeq = String((created.sequence ?? Number(milestoneSequence) ?? 0) + 1);
+      setMilestoneSequence(nextSeq);
+      mergeMilestoneIntoDetail(created);
       await refreshDetail();
+      // Older APIs omit milestones on GET — keep the created row visible after refetch.
+      mergeMilestoneIntoDetail(created);
     },
     onError: (error: Error) => setDetailError(error.message),
   });

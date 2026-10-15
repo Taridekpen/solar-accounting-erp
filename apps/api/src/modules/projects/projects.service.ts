@@ -319,7 +319,14 @@ export class ProjectsService {
         createdByUserId: access.userId,
       },
     });
-    return { id: milestone.id, name: milestone.name, amount: milestone.amount.toFixed(4), status: milestone.status };
+    return {
+      id: milestone.id,
+      name: milestone.name,
+      amount: formatMoneyUnits(parseMoney(milestone.amount.toFixed(4))),
+      sequence: milestone.sequence,
+      status: milestone.status,
+      createdByUserId: milestone.createdByUserId,
+    };
   }
 
   async recognize(access: AccessContext, projectId: string, milestoneId: string, input: ProjectDateDto, correlationId?: string) {
