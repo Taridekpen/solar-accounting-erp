@@ -171,7 +171,7 @@ export function ProjectsPage() {
       setDetailError(null);
       setMilestoneName("");
       setMilestoneAmount("");
-      setMilestoneSequence(String((detail.data?.milestones.length ?? 0) + 2));
+      setMilestoneSequence(String((detail.data?.milestones?.length ?? 0) + 2));
       await refreshDetail();
     },
     onError: (error: Error) => setDetailError(error.message),
@@ -376,7 +376,7 @@ export function ProjectsPage() {
                   </ActionButton>
                 </div>
               ) : null}
-              {(detail.data.materials.length ?? 0) === 0 ? (
+              {(detail.data.materials?.length ?? 0) === 0 ? (
                 <p className="text-sm text-muted">No material requests yet.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -391,7 +391,7 @@ export function ProjectsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {detail.data.materials.map((row) => {
+                      {(detail.data.materials ?? []).map((row) => {
                         const isRequester = Boolean(userId && row.createdByUserId === userId);
                         return (
                           <tr key={row.id} className="border-t border-line">
@@ -483,7 +483,7 @@ export function ProjectsPage() {
                   </ActionButton>
                 </div>
               ) : null}
-              {(detail.data.milestones.length ?? 0) === 0 ? (
+              {(detail.data.milestones?.length ?? 0) === 0 ? (
                 <p className="text-sm text-muted">No milestones yet.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -498,7 +498,7 @@ export function ProjectsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {detail.data.milestones.map((row) => {
+                      {(detail.data.milestones ?? []).map((row) => {
                         const isRequester = Boolean(userId && row.createdByUserId === userId);
                         return (
                           <tr key={row.id} className="border-t border-line">

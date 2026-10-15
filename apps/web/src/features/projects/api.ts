@@ -43,8 +43,8 @@ export interface ProjectMilestoneRow {
 }
 
 export interface ProjectDetail extends ProjectRecord {
-  materials: ProjectMaterialRow[];
-  milestones: ProjectMilestoneRow[];
+  materials?: ProjectMaterialRow[];
+  milestones?: ProjectMilestoneRow[];
 }
 
 export function fetchProjects() {

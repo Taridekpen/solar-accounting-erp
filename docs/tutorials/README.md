@@ -25,3 +25,15 @@ pnpm tutorial:accountant-pdf
 ```
 
 Source: [build-accountant-guide-pdf.mjs](./build-accountant-guide-pdf.mjs).
+
+## Roles & permissions guide
+
+File: [Solar-Accounting-Roles-Guide.pdf](./Solar-Accounting-Roles-Guide.pdf)
+
+What each built-in role is for, what staff do day to day, and which permissions unlock Expenses/Projects actions.
+
+```bash
+pnpm tutorial:roles-pdf
+```
+
+Source: [build-roles-guide-pdf.mjs](./build-roles-guide-pdf.mjs).
