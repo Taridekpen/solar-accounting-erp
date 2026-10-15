@@ -3,22 +3,27 @@ import { useState } from "react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
-import { useKeyedActionSuccess } from "@/hooks/use-action-success";
+import { useAsyncAction, useKeyedActionSuccess, useKeyedAsyncAction } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
+import { Modal } from "@/components/ui/modal";
 import { PageLoader } from "@/components/ui/page-loader";
 import {
   IMPORT_TYPE_OPTIONS,
   approveImport,
+  clearBooks,
   commitImport,
+  downloadMockImportFile,
   importReport,
   listImportBatches,
+  listMockImportFiles,
   parseImport,
   previewImport,
   uploadImport,
   validateImport,
   type ImportBatchRow,
   type ImportType,
+  type MockImportType,
 } from "@/features/imports/api";
 
 async function fileToBase64(file: File): Promise<string> {
@@ -32,11 +37,16 @@ async function fileToBase64(file: File): Promise<string> {
 export function ImportsPage() {
   const queryClient = useQueryClient();
   const batches = useQuery({ queryKey: ["imports"], queryFn: listImportBatches });
+  const mockFiles = useQuery({ queryKey: ["imports", "mock-files"], queryFn: listMockImportFiles });
   const [importType, setImportType] = useState<ImportType>("customers");
   const [selected, setSelected] = useState<ImportBatchRow | null>(null);
   const [preview, setPreview] = useState<Awaited<ReturnType<typeof previewImport>> | null>(null);
   const [report, setReport] = useState<unknown>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearConfirmation, setClearConfirmation] = useState("");
+  const clearFx = useAsyncAction();
+  const mockFx = useKeyedAsyncAction();
 
   const upload = useMutation({
     mutationFn: async (file: File) => {
@@ -93,6 +103,43 @@ export function ImportsPage() {
       {batches.isError ? <ErrorState message="Import batches could not be loaded." /> : null}
       {batches.isLoading ? <PageLoader label="Loading import batches…" /> : null}
       {message ? <p className="text-sm text-muted">{message}</p> : null}
+
+      <Card className="space-y-3 p-4">
+        <h2 className="font-medium">Mock CSV files</h2>
+        <p className="text-sm text-muted">
+          Sample files use branch {mockFiles.data?.branchName ?? "…"} so customer and supplier rows validate on commit.
+        </p>
+        {mockFiles.isError ? <ErrorState message="Mock files could not be loaded." onRetry={() => void mockFiles.refetch()} /> : null}
+        <div className="flex flex-wrap gap-2">
+          {(mockFiles.data?.files ?? []).map((file) => (
+            <ActionButton
+              key={file.importType}
+              type="button"
+              variant="secondary"
+              pending={mockFx.isPendingFor(file.importType)}
+              success={mockFx.isSuccessFor(file.importType)}
+              onClick={() =>
+                void mockFx.run(file.importType, () =>
+                  downloadMockImportFile(file.importType as MockImportType, file.fileName),
+                )
+              }
+            >
+              {file.label}
+            </ActionButton>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="space-y-3 border-rose-200 p-4">
+        <h2 className="font-medium text-rose-700">Clear books</h2>
+        <p className="text-sm text-muted">
+          Deletes journals, sales, purchases, stock, banking activity, customers, suppliers, and products. Keeps the chart of
+          accounts, branches, users, warehouses, and bank masters so you can re-import from zero.
+        </p>
+        <Button type="button" variant="secondary" onClick={() => setClearOpen(true)}>
+          Clear books…
+        </Button>
+      </Card>
 
       <Card className="space-y-3 p-4">
         <label className="block text-sm">
@@ -226,6 +273,60 @@ export function ImportsPage() {
           </table>
         </Card>
       ) : null}
+
+      <Modal
+        open={clearOpen}
+        onOpenChange={(open) => {
+          setClearOpen(open);
+          if (!open) setClearConfirmation("");
+        }}
+        title="Clear books"
+        description="This permanently deletes posted activity and party/product masters. Type CLEAR BOOKS to continue."
+      >
+        <div className="space-y-4">
+          <label className="block text-sm">
+            Confirmation
+            <input
+              className="mt-1 w-full rounded border border-line bg-surface px-3 py-2"
+              value={clearConfirmation}
+              onChange={(event) => setClearConfirmation(event.target.value)}
+              placeholder="CLEAR BOOKS"
+              autoComplete="off"
+            />
+          </label>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setClearOpen(false)}>
+              Cancel
+            </Button>
+            <ActionButton
+              type="button"
+              pending={clearFx.pending}
+              success={clearFx.success}
+              disabled={clearConfirmation !== "CLEAR BOOKS"}
+              onClick={() =>
+                void clearFx.run(async () => {
+                  await clearBooks();
+                  setSelected(null);
+                  setPreview(null);
+                  setReport(null);
+                  setClearOpen(false);
+                  setClearConfirmation("");
+                  setMessage("Books cleared. Download mock CSVs and import to rebuild.");
+                  await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ["imports"] }),
+                    queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] }),
+                    queryClient.invalidateQueries({ queryKey: ["trial-balance"] }),
+                    queryClient.invalidateQueries({ queryKey: ["cash-book"] }),
+                    queryClient.invalidateQueries({ queryKey: ["reports"] }),
+                  ]);
+                })
+              }
+            >
+              Clear books
+            </ActionButton>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

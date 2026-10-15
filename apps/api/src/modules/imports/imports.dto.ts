@@ -28,3 +28,9 @@ export class UploadImportDto {
   @MinLength(1)
   contentBase64!: string;
 }
+
+export class ClearBooksDto {
+  @IsString()
+  @IsIn(["CLEAR BOOKS"])
+  confirmation!: "CLEAR BOOKS";
+}

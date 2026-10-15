@@ -11,8 +11,10 @@ import { AuditService } from "../auth/audit.service";
 import { AccountingPostingService } from "../accounting/posting.service";
 import { formatMoneyUnits, parseMoney } from "../accounting/money";
 import { CompanyService } from "../organization/company.service";
+import { clearCompanyBooks } from "./clear-books";
 import { parseCsv } from "./csv";
-import { IMPORT_TYPES, ImportType, UploadImportDto } from "./imports.dto";
+import { ClearBooksDto, IMPORT_TYPES, ImportType, UploadImportDto } from "./imports.dto";
+import { buildMockCsv, isMockImportType, MOCK_IMPORT_TYPES, mockFileMeta } from "./mock-files";
 
 const MAX_BYTES = 2_000_000;
 const MONEY = /^\d+(\.\d{1,4})?$/;
@@ -61,6 +63,68 @@ export class ImportsService {
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     }));
+  }
+
+  async clearBooks(access: AccessContext, input: ClearBooksDto, correlationId?: string) {
+    this.requireManage(access);
+    if (input.confirmation !== "CLEAR BOOKS") {
+      throw new BadRequestException('Type "CLEAR BOOKS" to confirm');
+    }
+    const company = await this.companies.requireRecord();
+    await this.prisma.$transaction(
+      async (tx) => {
+        await clearCompanyBooks(tx, company.id);
+      },
+      { timeout: 120_000, maxWait: 20_000 },
+    );
+    await this.audit.record({
+      actorUserId: access.userId,
+      action: "imports.clear_books",
+      entityType: "company",
+      entityId: company.id,
+      reason: "Cleared all books to zero for fresh import",
+      correlationId,
+    });
+    return { status: "cleared" as const };
+  }
+
+  async listMockFiles(access: AccessContext) {
+    this.requireManage(access);
+    const company = await this.companies.requireRecord();
+    const branch = await this.prisma.branch.findFirst({
+      where: { companyId: company.id, deletedAt: null },
+      orderBy: [{ isHeadOffice: "desc" }, { name: "asc" }],
+      select: { id: true, name: true },
+    });
+    if (!branch) throw new NotFoundException("A branch is required before downloading mock files");
+    return {
+      branchId: branch.id,
+      branchName: branch.name,
+      files: MOCK_IMPORT_TYPES.map((type) => ({
+        ...mockFileMeta(type),
+        path: `/imports/mock-files/${type}`,
+      })),
+    };
+  }
+
+  async mockFile(access: AccessContext, type: string) {
+    this.requireManage(access);
+    if (!isMockImportType(type)) {
+      throw new BadRequestException("Mock file type is not supported");
+    }
+    const company = await this.companies.requireRecord();
+    const branch = await this.prisma.branch.findFirst({
+      where: { companyId: company.id, deletedAt: null },
+      orderBy: [{ isHeadOffice: "desc" }, { name: "asc" }],
+      select: { id: true },
+    });
+    if (!branch) throw new NotFoundException("A branch is required before downloading mock files");
+    const meta = mockFileMeta(type);
+    return {
+      fileName: meta.fileName,
+      contentType: "text/csv; charset=utf-8",
+      content: buildMockCsv(type, branch.id),
+    };
   }
 
   async upload(access: AccessContext, input: UploadImportDto) {

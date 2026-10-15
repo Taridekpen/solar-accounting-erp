@@ -117,3 +117,25 @@ export async function fetchDashboardDetails(input: {
   }
   return apiRequest<DashboardDetail>(`/dashboard/details?${params.toString()}`);
 }
+
+export interface DashboardTransactionDetail {
+  id: string;
+  journalNumber: string;
+  accountingDate: string;
+  description: string;
+  status: string;
+  sourceDocumentType: string;
+  postedAt: string | null;
+  lines: Array<{
+    id: string;
+    accountCode: string;
+    accountName: string;
+    debit: string;
+    credit: string;
+    description: string | null;
+  }>;
+}
+
+export function fetchDashboardTransaction(id: string) {
+  return apiRequest<DashboardTransactionDetail>(`/dashboard/transactions/${id}`);
+}

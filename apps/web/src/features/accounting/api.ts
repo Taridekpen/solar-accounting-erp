@@ -33,6 +33,7 @@ export interface JournalRow {
   status: string;
   sourceDocumentType: string;
   reversalOfId: string | null;
+  reason?: string | null;
   closedPeriodAdjustment: boolean;
   lines: JournalLineRow[];
 }

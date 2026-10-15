@@ -24,7 +24,36 @@ export interface CashBook {
   receipts: string;
   payments: string;
   closing: string;
-  lines: { id: string; date: string; accountCode: string; description: string | null; debit: string; credit: string; sourceType: string }[];
+  lines: {
+    id: string;
+    journalId: string;
+    journalNumber: string;
+    date: string;
+    accountCode: string;
+    branchName: string;
+    description: string | null;
+    debit: string;
+    credit: string;
+    sourceType: string;
+  }[];
+}
+
+export interface CashBookJournalDetail {
+  id: string;
+  journalNumber: string;
+  accountingDate: string;
+  description: string;
+  status: string;
+  sourceDocumentType: string;
+  postedAt: string | null;
+  lines: Array<{
+    id: string;
+    accountCode: string;
+    accountName: string;
+    debit: string;
+    credit: string;
+    description: string | null;
+  }>;
 }
 
 export interface BankStatementRecord {
@@ -50,6 +79,10 @@ export function fetchCashBook() {
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const to = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
   return apiRequest<CashBook>(`/banking/cash-book?from=${from}&to=${to}`);
+}
+
+export function fetchCashBookJournal(id: string) {
+  return apiRequest<CashBookJournalDetail>(`/banking/cash-book/journals/${id}`);
 }
 
 export function fetchBankStatements() {

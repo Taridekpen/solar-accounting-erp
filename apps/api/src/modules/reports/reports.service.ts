@@ -147,7 +147,13 @@ export class ReportsService {
       const credit = movement < 0n ? -movement : 0n;
       totalDebit += debit;
       totalCredit += credit;
-      return [{ accountCode: account.accountCode, accountName: account.accountName, debit: formatMoneyUnits(debit), credit: formatMoneyUnits(credit) }];
+      return [{
+        accountId: account.id,
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        debit: formatMoneyUnits(debit),
+        credit: formatMoneyUnits(credit),
+      }];
     });
     return {
       ...header.meta("Trial balance"),

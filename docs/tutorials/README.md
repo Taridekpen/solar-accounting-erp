@@ -1,23 +1,27 @@
-# End-user tutorials
+# Tutorials
 
-## Solar Accounting User Guide (PDF)
+Regenerable PDF guides for Solar Accounting.
+
+## End-user guide (staff)
 
 File: [Solar-Accounting-User-Guide.pdf](./Solar-Accounting-User-Guide.pdf)
 
-Plain-language guide for everyday staff (sales, branch, stock, expenses)—not accountants or developers. Covers sign-in, the screen layout, branch filter, and every main sidebar page with click-by-click steps.
-
-### Regenerate
-
-From the repository root:
+Plain-language click-by-click guide for everyday staff (sales, branch, stock, expenses)—not accountants or developers.
 
 ```bash
 pnpm tutorial:pdf
 ```
 
-Or:
+Source: [build-user-guide-pdf.mjs](./build-user-guide-pdf.mjs).
+
+## Accountant guide (controllers)
+
+File: [Solar-Accounting-Accountant-Guide.pdf](./Solar-Accounting-Accountant-Guide.pdf)
+
+Detailed reference for accountants and controllers: posting engine, event mappings (Dr/Cr), fiscal period rules, and every sidebar page with ledger/stock effects. Complements the How-It-Works PowerPoint (`pnpm pptx:how-it-works`).
 
 ```bash
-node docs/tutorials/build-user-guide-pdf.mjs
+pnpm tutorial:accountant-pdf
 ```
 
-Source script: [build-user-guide-pdf.mjs](./build-user-guide-pdf.mjs).
+Source: [build-accountant-guide-pdf.mjs](./build-accountant-guide-pdf.mjs).

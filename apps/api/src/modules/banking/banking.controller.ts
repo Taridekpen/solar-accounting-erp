@@ -56,6 +56,12 @@ export class BankingController {
     return this.banking.cashBook(request.access, query);
   }
 
+  @RequirePermissions("banking.reconcile")
+  @Get("cash-book/journals/:id")
+  cashBookJournal(@Param("id", ParseUUIDPipe) id: string, @Req() request: BankingRequest) {
+    return this.banking.cashBookJournal(request.access, id);
+  }
+
   @RequirePermissions("banking.transfer")
   @Post("transfers")
   transfer(@Body() body: CreateCashTransferDto, @Req() request: BankingRequest) {

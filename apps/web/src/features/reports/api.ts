@@ -11,7 +11,7 @@ export interface TrialBalanceReport {
   totalDebit: string;
   totalCredit: string;
   balanced: boolean;
-  rows: { accountCode: string; accountName: string; debit: string; credit: string }[];
+  rows: { accountId: string; accountCode: string; accountName: string; debit: string; credit: string }[];
 }
 
 export interface ProfitReport {
@@ -26,12 +26,42 @@ export interface ProfitReport {
   lines: { code: string; label: string; amounts: Record<string, string> }[];
 }
 
+export interface LedgerReport {
+  title: string;
+  companyName: string;
+  period: string;
+  scope: string;
+  currency: string;
+  generatedAt: string;
+  preparedBy: string;
+  accountCode: string;
+  accountName: string;
+  opening: string;
+  closing: string;
+  rows: Array<{
+    date: string;
+    journalNumber: string;
+    journalId: string;
+    sourceDocumentType: string;
+    sourceDocumentId: string | null;
+    description: string | null;
+    branchName: string;
+    debit: string;
+    credit: string;
+    running: string;
+  }>;
+}
+
 export function fetchTrialBalance(asOf: string) {
   return apiRequest<TrialBalanceReport>(`/reports/trial-balance?asOf=${asOf}`);
 }
 
 export function fetchProfitAndLoss(from: string, to: string) {
   return apiRequest<ProfitReport>(`/reports/profit-and-loss?from=${from}&to=${to}`);
+}
+
+export function fetchLedger(accountId: string, from: string, to: string) {
+  return apiRequest<LedgerReport>(`/reports/ledger?accountId=${accountId}&from=${from}&to=${to}`);
 }
 
 export async function downloadReport(path: string, filename: string) {

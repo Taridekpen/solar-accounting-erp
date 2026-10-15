@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req } from "@nestjs/common";
+import { Controller, Get, Param, ParseUUIDPipe, Query, Req } from "@nestjs/common";
 import { ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { RequirePermissions } from "../auth/decorators";
 import { BranchScope } from "../organization/branch-scope";
@@ -26,5 +26,12 @@ export class DashboardController {
   @ApiOkResponse({ description: "Journal lines that reconcile to a dashboard figure" })
   getDetails(@Query() query: DashboardDetailQueryDto, @Req() request: DashboardRequest) {
     return this.dashboardService.getDetails(query, request.branchScope ?? { type: "company" });
+  }
+
+  @RequirePermissions("dashboard.view")
+  @Get("transactions/:id")
+  @ApiOkResponse({ description: "Posted journal detail for a recent dashboard transaction" })
+  getTransaction(@Param("id", ParseUUIDPipe) id: string, @Req() request: DashboardRequest) {
+    return this.dashboardService.getTransaction(id, request.branchScope ?? { type: "company" });
   }
 }

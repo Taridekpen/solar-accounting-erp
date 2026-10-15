@@ -1,4 +1,4 @@
-import { apiRequest } from "@/services/api-client";
+import { apiBaseUrl, apiRequest } from "@/services/api-client";
 
 export type ImportType =
   | "chart_of_accounts"
@@ -11,6 +11,25 @@ export type ImportType =
   | "outstanding_bills"
   | "fixed_assets"
   | "opening_trial_balance";
+
+export type MockImportType =
+  | "customers"
+  | "suppliers"
+  | "products"
+  | "opening_trial_balance"
+  | "bank_opening_balances"
+  | "warehouse_opening_stock";
+
+export interface MockImportFiles {
+  branchId: string;
+  branchName: string;
+  files: Array<{
+    importType: MockImportType;
+    label: string;
+    fileName: string;
+    path: string;
+  }>;
+}
 
 export interface ImportBatchRow {
   id: string;
@@ -89,4 +108,27 @@ export function commitImport(id: string) {
 
 export function importReport(id: string) {
   return apiRequest<{ id: string; importType: string; report: unknown }>(`/imports/${id}/report`);
+}
+
+export function listMockImportFiles() {
+  return apiRequest<MockImportFiles>("/imports/mock-files");
+}
+
+export function clearBooks() {
+  return apiRequest<{ status: "cleared" }>("/imports/clear-books", {
+    method: "POST",
+    body: JSON.stringify({ confirmation: "CLEAR BOOKS" }),
+  });
+}
+
+export async function downloadMockImportFile(type: MockImportType, fileName: string) {
+  const response = await fetch(`${apiBaseUrl()}/imports/mock-files/${type}`, { credentials: "include" });
+  if (!response.ok) throw new Error("The mock file could not be downloaded");
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
 }

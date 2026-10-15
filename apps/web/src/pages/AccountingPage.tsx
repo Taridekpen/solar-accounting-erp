@@ -1,14 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { z } from "zod";
 import { formatMoney } from "@solar/shared";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
+import { Button } from "@/components/ui/button";
 import { useActionSuccess, useKeyedActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
+import { MoneyValue } from "@/components/ui/money-value";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useAuth } from "@/features/auth/auth-context";
 import {
@@ -19,6 +23,7 @@ import {
   fetchTrialBalance,
   importOpeningBalances,
   reverseJournal,
+  type JournalRow,
 } from "@/features/accounting/api";
 
 const money = z.string().regex(/^\d+(\.\d{1,4})?$/, "Enter a decimal amount");
@@ -175,10 +180,22 @@ function Queue({
   approveFx,
 }: {
   title: string;
-  rows: Array<{ id: string; journalNumber: string; description: string; status: string }>;
+  rows: JournalRow[];
   onApprove?: (id: string) => void;
   approveFx?: { isPendingFor: (key: string) => boolean; isSuccessFor: (key: string) => boolean };
 }) {
+  const [viewing, setViewing] = useState<JournalRow | null>(null);
+  const totals = useMemo(() => {
+    if (!viewing) return { debit: "0.0000", credit: "0.0000" };
+    let debit = 0;
+    let credit = 0;
+    for (const line of viewing.lines) {
+      debit += Number(line.debit) || 0;
+      credit += Number(line.credit) || 0;
+    }
+    return { debit: debit.toFixed(4), credit: credit.toFixed(4) };
+  }, [viewing]);
+
   return (
     <Card className="p-4">
       <h2 className="font-semibold">{title}</h2>
@@ -187,18 +204,112 @@ function Queue({
         {rows.map((row) => (
           <li key={row.id} className="flex items-center justify-between gap-3">
             <span>{row.journalNumber} · {row.description}</span>
-            {onApprove && row.status === "pending_approval" ? (
-              <ActionTextButton
-                pending={approveFx?.isPendingFor(row.id)}
-                success={approveFx?.isSuccessFor(row.id)}
-                onClick={() => onApprove(row.id)}
-              >
-                Approve
-              </ActionTextButton>
-            ) : null}
+            <span className="flex shrink-0 items-center gap-3">
+              <ActionTextButton onClick={() => setViewing(row)}>View</ActionTextButton>
+              {onApprove && row.status === "pending_approval" ? (
+                <ActionTextButton
+                  pending={approveFx?.isPendingFor(row.id)}
+                  success={approveFx?.isSuccessFor(row.id)}
+                  onClick={() => onApprove(row.id)}
+                >
+                  Approve
+                </ActionTextButton>
+              ) : null}
+            </span>
           </li>
         ))}
       </ul>
+      <Modal
+        open={Boolean(viewing)}
+        onOpenChange={(open) => {
+          if (!open) setViewing(null);
+        }}
+        title={viewing ? viewing.journalNumber : "Journal"}
+        description={viewing?.description ?? "Journal lines"}
+      >
+        {viewing ? (
+          <div className="space-y-4">
+            <dl className="grid gap-2 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-muted">Accounting date</dt>
+                <dd className="font-medium">{viewing.accountingDate}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Status</dt>
+                <dd className="font-medium">{viewing.status}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-muted">Description</dt>
+                <dd className="font-medium">{viewing.description}</dd>
+              </div>
+              {viewing.closedPeriodAdjustment ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-muted">Closed-period adjustment</dt>
+                  <dd className="font-medium">Yes</dd>
+                </div>
+              ) : null}
+              {viewing.reason ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-muted">Reason</dt>
+                  <dd className="font-medium">{viewing.reason}</dd>
+                </div>
+              ) : null}
+            </dl>
+            <div className="overflow-x-auto rounded-lg border border-line">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-canvas text-muted">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Account</th>
+                    <th className="px-3 py-2 text-right font-medium">Debit</th>
+                    <th className="px-3 py-2 text-right font-medium">Credit</th>
+                    <th className="px-3 py-2 font-medium">Line note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewing.lines.map((line) => (
+                    <tr key={line.id} className="border-t border-line">
+                      <td className="px-3 py-2">
+                        {[line.accountCode, line.accountName].filter(Boolean).join(" ") || line.accountId}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {Number(line.debit) > 0 ? <MoneyValue amount={line.debit} /> : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {Number(line.credit) > 0 ? <MoneyValue amount={line.credit} /> : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-muted">{line.description || "—"}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t border-line font-medium">
+                    <td className="px-3 py-2">Total</td>
+                    <td className="px-3 py-2 text-right tabular-nums"><MoneyValue amount={totals.debit} /></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><MoneyValue amount={totals.credit} /></td>
+                    <td className="px-3 py-2" />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setViewing(null)}>
+                Close
+              </Button>
+              {onApprove && viewing.status === "pending_approval" ? (
+                <ActionButton
+                  type="button"
+                  pending={approveFx?.isPendingFor(viewing.id)}
+                  success={approveFx?.isSuccessFor(viewing.id)}
+                  onClick={() => {
+                    onApprove(viewing.id);
+                    setViewing(null);
+                  }}
+                >
+                  Approve
+                </ActionButton>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </Card>
   );
 }

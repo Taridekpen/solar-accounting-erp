@@ -2,15 +2,19 @@ import { moneyToChartValue, type DashboardSummary, type MonthAmount, type NamedA
 import { useQuery } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
 import { Receipt, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { DateRangeFilter, formatBusinessDate } from "@/components/filters/date-range-filter";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { Modal } from "@/components/ui/modal";
 import { MoneyValue } from "@/components/ui/money-value";
+import { PageLoader } from "@/components/ui/page-loader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchDashboardSummary } from "@/services/api-client";
+import { fetchDashboardSummary, fetchDashboardTransaction } from "@/services/api-client";
 import { useUi } from "@/stores/ui-context";
 
 const kpiConfig: {
@@ -85,6 +89,23 @@ export function DashboardPage() {
 }
 
 function DashboardContent({ summary }: { summary: DashboardSummary }) {
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const transaction = useQuery({
+    queryKey: ["dashboard-transaction", transactionId],
+    queryFn: () => fetchDashboardTransaction(transactionId ?? ""),
+    enabled: Boolean(transactionId),
+  });
+  const transactionTotals = useMemo(() => {
+    const lines = transaction.data?.lines ?? [];
+    let debit = 0;
+    let credit = 0;
+    for (const line of lines) {
+      debit += Number(line.debit) || 0;
+      credit += Number(line.credit) || 0;
+    }
+    return { debit: debit.toFixed(4), credit: credit.toFixed(4) };
+  }, [transaction.data]);
+
   return (
     <>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -180,21 +201,112 @@ function DashboardContent({ summary }: { summary: DashboardSummary }) {
             <EmptyState title="No transactions" description="Receipts, invoices, and payments will show here after posting." />
           ) : (
             <ul className="divide-y divide-line">
-              {summary.recentTransactions.map((transaction) => (
-                <li key={transaction.id} className="flex items-center justify-between py-3 text-sm">
-                  <span>
-                    <span className="block font-medium">{transaction.description}</span>
-                    <span className="text-muted">{transaction.type}</span>
-                  </span>
-                  <span>
-                    <MoneyValue amount={transaction.amount} />
-                  </span>
+              {summary.recentTransactions.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 py-3 text-left text-sm transition-colors hover:bg-canvas/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    onClick={() => setTransactionId(item.id)}
+                  >
+                    <span>
+                      <span className="block font-medium">{item.description}</span>
+                      <span className="text-muted">{item.type}</span>
+                    </span>
+                    <span>
+                      <MoneyValue amount={item.amount} />
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
           )}
         </Card>
       </section>
+
+      <Modal
+        open={Boolean(transactionId)}
+        onOpenChange={(open) => {
+          if (!open) setTransactionId(null);
+        }}
+        title={transaction.data?.journalNumber ?? "Transaction"}
+        description={transaction.data?.description ?? "Posted journal lines for this transaction."}
+      >
+        {transaction.isLoading ? <PageLoader label="Loading transaction…" className="py-8" /> : null}
+        {transaction.isError ? (
+          <ErrorState message="This transaction could not be loaded." onRetry={() => void transaction.refetch()} />
+        ) : null}
+        {transaction.data ? (
+          <div className="space-y-4">
+            <dl className="grid gap-2 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-muted">Accounting date</dt>
+                <dd className="font-medium">{transaction.data.accountingDate}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Type</dt>
+                <dd className="font-medium">{transaction.data.sourceDocumentType}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Status</dt>
+                <dd className="font-medium">{transaction.data.status}</dd>
+              </div>
+              {transaction.data.postedAt ? (
+                <div>
+                  <dt className="text-muted">Posted at</dt>
+                  <dd className="font-medium">{new Date(transaction.data.postedAt).toLocaleString()}</dd>
+                </div>
+              ) : null}
+              <div className="sm:col-span-2">
+                <dt className="text-muted">Description</dt>
+                <dd className="font-medium">{transaction.data.description}</dd>
+              </div>
+            </dl>
+            <div className="overflow-x-auto rounded-lg border border-line">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-canvas text-muted">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Account</th>
+                    <th className="px-3 py-2 text-right font-medium">Debit</th>
+                    <th className="px-3 py-2 text-right font-medium">Credit</th>
+                    <th className="px-3 py-2 font-medium">Line note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transaction.data.lines.map((line) => (
+                    <tr key={line.id} className="border-t border-line">
+                      <td className="px-3 py-2">
+                        {line.accountCode} {line.accountName}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {Number(line.debit) > 0 ? <MoneyValue amount={line.debit} /> : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {Number(line.credit) > 0 ? <MoneyValue amount={line.credit} /> : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-muted">{line.description || "—"}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t border-line font-medium">
+                    <td className="px-3 py-2">Total</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      <MoneyValue amount={transactionTotals.debit} />
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      <MoneyValue amount={transactionTotals.credit} />
+                    </td>
+                    <td className="px-3 py-2" />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end">
+              <Button type="button" variant="secondary" onClick={() => setTransactionId(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <TrendCard title="Monthly revenue" empty="No revenue in this range" points={summary.monthlyRevenue} />

@@ -251,6 +251,8 @@ export class BankingService {
       closing: formatMoneyUnits(opening + receipts - payments),
       lines: rangeLines.map((line) => ({
         id: line.id,
+        journalId: line.journal.id,
+        journalNumber: line.journal.journalNumber,
         date: line.journal.accountingDate.toISOString().slice(0, 10),
         accountCode: line.account.accountCode,
         branchName: line.branch.name,
@@ -258,6 +260,47 @@ export class BankingService {
         sourceType: line.journal.sourceDocumentType,
         debit: moneyText(line.debit),
         credit: moneyText(line.credit),
+      })),
+    };
+  }
+
+  async cashBookJournal(access: AccessContext, id: string) {
+    this.assertReconcile(access);
+    const companyId = await this.companyId(access.userId);
+    const branchIds = branchIdFilter(access.scope);
+    const entry = await this.prisma.journalEntry.findFirst({
+      where: {
+        id,
+        companyId,
+        status: "posted",
+        ...(branchIds ? { lines: { some: { branchId: branchIds } } } : {}),
+      },
+      include: { lines: { include: { account: true }, orderBy: { createdAt: "asc" } } },
+    });
+    if (!entry) {
+      throw new NotFoundException("Journal was not found");
+    }
+    const lines = branchIds
+      ? entry.lines.filter((line) => branchIds.in.includes(line.branchId))
+      : entry.lines;
+    if (lines.length === 0) {
+      throw new NotFoundException("Journal was not found");
+    }
+    return {
+      id: entry.id,
+      journalNumber: entry.journalNumber,
+      accountingDate: entry.accountingDate.toISOString().slice(0, 10),
+      description: entry.description,
+      status: entry.status,
+      sourceDocumentType: entry.sourceDocumentType,
+      postedAt: entry.postedAt?.toISOString() ?? null,
+      lines: lines.map((line) => ({
+        id: line.id,
+        accountCode: line.account.accountCode,
+        accountName: line.account.accountName,
+        debit: formatMoneyUnits(parseMoney(line.debit.toFixed(4))),
+        credit: formatMoneyUnits(parseMoney(line.credit.toFixed(4))),
+        description: line.description,
       })),
     };
   }

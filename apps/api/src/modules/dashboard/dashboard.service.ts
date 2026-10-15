@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { DashboardDetail, DashboardSummary } from "@solar/shared";
 import { periodBounds } from "../../common/timezone";
@@ -166,6 +166,52 @@ export class DashboardService {
         activeInstallations: projects.installations,
         dailyClosingStatus: "none",
       },
+    };
+  }
+
+  async getTransaction(id: string, scope: BranchScope = COMPANY_SCOPE) {
+    const company = await this.prisma.company.findFirst({
+      where: { deletedAt: null },
+      select: { id: true },
+    });
+    if (!company) {
+      throw new NotFoundException("Transaction was not found");
+    }
+    const entry = await this.prisma.journalEntry.findFirst({
+      where: {
+        id,
+        companyId: company.id,
+        status: "posted",
+        ...(scope.type === "branches" ? { lines: { some: { branchId: { in: scope.branchIds } } } } : {}),
+      },
+      include: { lines: { include: { account: true }, orderBy: { createdAt: "asc" } } },
+    });
+    if (!entry) {
+      throw new NotFoundException("Transaction was not found");
+    }
+    const lines =
+      scope.type === "company"
+        ? entry.lines
+        : entry.lines.filter((line) => scope.branchIds.includes(line.branchId));
+    if (lines.length === 0) {
+      throw new NotFoundException("Transaction was not found");
+    }
+    return {
+      id: entry.id,
+      journalNumber: entry.journalNumber,
+      accountingDate: entry.accountingDate.toISOString().slice(0, 10),
+      description: entry.description,
+      status: entry.status,
+      sourceDocumentType: entry.sourceDocumentType,
+      postedAt: entry.postedAt?.toISOString() ?? null,
+      lines: lines.map((line) => ({
+        id: line.id,
+        accountCode: line.account.accountCode,
+        accountName: line.account.accountName,
+        debit: formatMoneyUnits(parseMoney(line.debit.toFixed(4))),
+        credit: formatMoneyUnits(parseMoney(line.credit.toFixed(4))),
+        description: line.description,
+      })),
     };
   }
 
