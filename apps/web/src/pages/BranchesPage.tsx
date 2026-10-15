@@ -4,7 +4,9 @@ import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess, useKeyedActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -81,6 +83,8 @@ export function BranchesPage() {
       await queryClient.invalidateQueries({ queryKey: ["branches"] });
     },
   });
+  const saveOk = useActionSuccess(save);
+  const statusFx = useKeyedActionSuccess(statusChange, (vars) => vars.id);
 
   const rows = (branches.data?.data ?? []).filter((branch) => selectedBranchIds.length === 0 || selectedBranchIds.includes(branch.id));
 
@@ -141,6 +145,8 @@ export function BranchesPage() {
                     status: branch.status === "active" ? "inactive" : "active",
                   })
                 }
+                togglePending={statusFx.isPendingFor(branch.id)}
+                toggleSuccess={statusFx.isSuccessFor(branch.id)}
                 />
               ))}
             </tbody>
@@ -200,7 +206,7 @@ export function BranchesPage() {
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={save.isPending}>Save branch</Button>
+            <ActionButton type="submit" pending={save.isPending} success={saveOk}>Save branch</ActionButton>
           </div>
         </form>
       </Modal>
@@ -250,7 +256,21 @@ export function BranchesPage() {
   );
 }
 
-function BranchRow({ branch, onEdit, onSettings, onToggle }: { branch: BranchRecord; onEdit: () => void; onSettings: () => void; onToggle: () => void }) {
+function BranchRow({
+  branch,
+  onEdit,
+  onSettings,
+  onToggle,
+  togglePending,
+  toggleSuccess,
+}: {
+  branch: BranchRecord;
+  onEdit: () => void;
+  onSettings: () => void;
+  onToggle: () => void;
+  togglePending?: boolean;
+  toggleSuccess?: boolean;
+}) {
   const location = [branch.city, branch.state].filter(Boolean).join(", ") || "—";
   return (
     <tr className="border-t border-line">
@@ -273,9 +293,9 @@ function BranchRow({ branch, onEdit, onSettings, onToggle }: { branch: BranchRec
         <button type="button" className="mr-3 text-primary" onClick={onSettings}>
           Settings
         </button>
-        <button type="button" className="text-primary" onClick={onToggle}>
+        <ActionTextButton className="mr-0" pending={togglePending} success={toggleSuccess} onClick={onToggle}>
           {branch.status === "active" ? "Deactivate" : "Activate"}
-        </button>
+        </ActionTextButton>
       </td>
     </tr>
   );

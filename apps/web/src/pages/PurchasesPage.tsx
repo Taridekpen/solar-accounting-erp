@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess, useKeyedActionSuccess, useKeyedAsyncAction } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -144,6 +146,16 @@ export function PurchasesPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const previewOk = useActionSuccess(previewMutation);
+  const saveOk = useActionSuccess(save);
+  const saveRequisitionOk = useActionSuccess(saveRequisition);
+  const receiveOk = useActionSuccess(receive);
+  const matchOk = useActionSuccess(match);
+  const postBillOk = useActionSuccess(postBill);
+  const draftPaymentOk = useActionSuccess(draftPayment);
+  const submitFx = useKeyedActionSuccess(submit);
+  const approveFx = useKeyedActionSuccess(approve);
+  const pdfFx = useKeyedAsyncAction();
 
   function billBody() {
     return {
@@ -203,12 +215,26 @@ export function PurchasesPage() {
                   <td className="px-4 py-3 capitalize">{order.status.replaceAll("_", " ")}</td>
                   <td className="px-4 py-3 text-right"><MoneyValue amount={order.grandTotal} /></td>
                   <td className="px-4 py-3">
-                    {order.status === "draft" ? <button type="button" className="mr-3 text-primary" onClick={() => submit.mutate(order.id)}>Submit</button> : null}
-                    {order.status === "pending_approval" ? <button type="button" className="mr-3 text-primary" onClick={() => approve.mutate(order.id)}>Approve</button> : null}
+                    {order.status === "draft" ? (
+                      <ActionTextButton className="mr-3" pending={submitFx.isPendingFor(order.id)} success={submitFx.isSuccessFor(order.id)} onClick={() => submit.mutate(order.id)}>
+                        Submit
+                      </ActionTextButton>
+                    ) : null}
+                    {order.status === "pending_approval" ? (
+                      <ActionTextButton className="mr-3" pending={approveFx.isPendingFor(order.id)} success={approveFx.isSuccessFor(order.id)} onClick={() => approve.mutate(order.id)}>
+                        Approve
+                      </ActionTextButton>
+                    ) : null}
                     {["approved", "partially_received"].includes(order.status) ? <button type="button" className="mr-3 text-primary" onClick={() => { setSelectedOrder(order); setFormError(null); setReceiptOpen(true); }}>Receive</button> : null}
                     {["approved", "partially_received", "received"].includes(order.status) ? <button type="button" className="mr-3 text-primary" onClick={() => { setSelectedOrder(order); setBillPreview(null); setFormError(null); setBillOpen(true); }}>Bill</button> : null}
                     {["approved", "partially_received", "received"].includes(order.status) ? <button type="button" className="mr-3 text-primary" onClick={() => { setSelectedOrder(order); setFormError(null); setPaymentOpen(true); }}>Pay</button> : null}
-                    <button type="button" className="text-primary" onClick={() => void downloadPurchasePdf(`/purchases/orders/${order.id}/pdf`, `${order.purchaseOrderNumber}.pdf`)}>PDF</button>
+                    <ActionTextButton
+                      pending={pdfFx.isPendingFor(order.id)}
+                      success={pdfFx.isSuccessFor(order.id)}
+                      onClick={() => void pdfFx.run(order.id, () => downloadPurchasePdf(`/purchases/orders/${order.id}/pdf`, `${order.purchaseOrderNumber}.pdf`))}
+                    >
+                      PDF
+                    </ActionTextButton>
                   </td>
                 </tr>
               ))}
@@ -291,11 +317,11 @@ export function PurchasesPage() {
           ) : null}
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           {section === "requisitions" ? (
-            <Button type="button" onClick={() => saveRequisition.mutate()} disabled={saveRequisition.isPending}>Save requisition</Button>
+            <ActionButton type="button" onClick={() => saveRequisition.mutate()} pending={saveRequisition.isPending} success={saveRequisitionOk}>Save requisition</ActionButton>
           ) : (
             <div className="flex gap-2">
-              <Button type="button" variant="secondary" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}>Preview</Button>
-              <Button type="button" onClick={() => save.mutate()} disabled={save.isPending || !preview}>Save draft</Button>
+              <ActionButton type="button" variant="secondary" onClick={() => previewMutation.mutate()} pending={previewMutation.isPending} success={previewOk}>Preview</ActionButton>
+              <ActionButton type="button" onClick={() => save.mutate()} pending={save.isPending} success={saveOk} disabled={!preview}>Save draft</ActionButton>
             </div>
           )}
         </div>
@@ -307,7 +333,7 @@ export function PurchasesPage() {
           <label className="block text-sm">Rejected<Input className="mt-1" value={rejected} onChange={(event) => setRejected(event.target.value)} /></label>
           <label className="block text-sm">Serial numbers<Input className="mt-1" value={serials} onChange={(event) => setSerials(event.target.value)} placeholder="Comma separated" /></label>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
-          <Button type="button" onClick={() => receive.mutate()} disabled={receive.isPending}>Record receipt</Button>
+          <ActionButton type="button" onClick={() => receive.mutate()} pending={receive.isPending} success={receiveOk}>Record receipt</ActionButton>
         </div>
       </Modal>
       <Modal open={billOpen} title="Supplier bill" onOpenChange={setBillOpen}>
@@ -326,8 +352,8 @@ export function PurchasesPage() {
           ) : null}
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={() => match.mutate()} disabled={match.isPending}>Check match</Button>
-            <Button type="button" onClick={() => postBill.mutate()} disabled={postBill.isPending || !billPreview}>Post bill</Button>
+            <ActionButton type="button" variant="secondary" onClick={() => match.mutate()} pending={match.isPending} success={matchOk}>Check match</ActionButton>
+            <ActionButton type="button" onClick={() => postBill.mutate()} pending={postBill.isPending} success={postBillOk} disabled={!billPreview}>Post bill</ActionButton>
           </div>
         </div>
       </Modal>
@@ -341,7 +367,7 @@ export function PurchasesPage() {
             </select>
           </label>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
-          <Button type="button" onClick={() => draftPayment.mutate()} disabled={draftPayment.isPending}>Post payment</Button>
+          <ActionButton type="button" onClick={() => draftPayment.mutate()} pending={draftPayment.isPending} success={draftPaymentOk}>Post payment</ActionButton>
         </div>
       </Modal>
     </div>

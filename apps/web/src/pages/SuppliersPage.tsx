@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -71,6 +73,7 @@ export function SuppliersPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const saveOk = useActionSuccess(save);
   const rows = suppliers.data?.data ?? [];
 
   return (
@@ -149,7 +152,7 @@ export function SuppliersPage() {
           {editing?.bankAccountMask ? <p className="text-xs text-muted">Stored account ends {editing.bankAccountMask}. Enter a new number only to replace it.</p> : null}
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           {form.formState.errors.businessName ? <p className="text-sm text-rose-600">{form.formState.errors.businessName.message}</p> : null}
-          <Button type="submit" disabled={save.isPending}>Save supplier</Button>
+          <ActionButton type="submit" pending={save.isPending} success={saveOk}>Save supplier</ActionButton>
         </form>
       </Modal>
       <Modal open={Boolean(statementId)} title="Supplier statement" onOpenChange={(next) => { if (!next) setStatementId(null); }}>

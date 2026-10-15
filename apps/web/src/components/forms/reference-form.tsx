@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -8,7 +9,15 @@ const sampleSchema = z.object({
   reference: z.string().min(2, "Enter at least 2 characters"),
 });
 
-export function ReferenceForm({ onSubmit }: { onSubmit: (reference: string) => void }) {
+export function ReferenceForm({
+  onSubmit,
+  pending = false,
+  success = false,
+}: {
+  onSubmit: (reference: string) => void;
+  pending?: boolean;
+  success?: boolean;
+}) {
   const form = useForm<{ reference: string }>({
     resolver: zodResolver(sampleSchema),
     defaultValues: { reference: "" },
@@ -33,7 +42,9 @@ export function ReferenceForm({ onSubmit }: { onSubmit: (reference: string) => v
         <Button type="button" variant="secondary" onClick={() => form.reset()}>
           Cancel
         </Button>
-        <Button type="submit">Save</Button>
+        <ActionButton type="submit" pending={pending} success={success}>
+          Save
+        </ActionButton>
       </div>
     </form>
   );

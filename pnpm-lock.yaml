@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      pdfkit:
+        specifier: ^0.20.2
+        version: 0.20.2
       pptxgenjs:
         specifier: ^4.0.1
         version: 4.0.1

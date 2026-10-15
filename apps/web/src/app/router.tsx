@@ -15,6 +15,7 @@ import { BankingPage } from "@/pages/BankingPage";
 import { EmployeesPage } from "@/pages/EmployeesPage";
 import { ExpensesPage } from "@/pages/ExpensesPage";
 import { InventoryPage } from "@/pages/InventoryPage";
+import { ActivateAccountPage } from "@/pages/ActivateAccountPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { ModulePlaceholderPage } from "@/pages/ModulePlaceholderPage";
 import { ProjectsPage } from "@/pages/ProjectsPage";
@@ -100,6 +101,7 @@ function ProtectedShell() {
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/activate", element: <ActivateAccountPage /> },
   {
     path: "/",
     element: <ProtectedShell />,

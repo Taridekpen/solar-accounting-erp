@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
+import { ActionButton } from "@/components/ui/action-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess, useKeyedActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
@@ -84,6 +86,7 @@ export function SettingsPage() {
       await queryClient.invalidateQueries({ queryKey: ["company"] });
     },
   });
+  const saveOk = useActionSuccess(save);
 
   useEffect(() => {
     if (!company.data) return;
@@ -226,7 +229,7 @@ export function SettingsPage() {
             {save.isSuccess ? <p className="text-sm text-emerald-700 sm:col-span-2">Company profile saved.</p> : null}
             {canManage ? (
               <div className="sm:col-span-2">
-                <Button type="submit" disabled={save.isPending || company.isLoading}>Save company</Button>
+                <ActionButton type="submit" pending={save.isPending || company.isLoading} success={saveOk}>Save company</ActionButton>
               </div>
             ) : null}
           </form>
@@ -261,6 +264,7 @@ function TemplatesPanel({ canManage }: { canManage: boolean }) {
       await queryClient.invalidateQueries({ queryKey: ["document-templates"] });
     },
   });
+  const saveOk = useActionSuccess(save);
   return (
     <div className="mt-6 space-y-3 border-t border-line pt-4">
       <h2 className="text-lg font-medium">Document templates</h2>
@@ -276,7 +280,11 @@ function TemplatesPanel({ canManage }: { canManage: boolean }) {
         <span className="mb-1 block font-medium">Payment advice</span>
         <Input value={paymentAdvice} onChange={(event) => setPaymentAdvice(event.target.value)} disabled={!canManage} />
       </label>
-      {canManage ? <Button type="button" onClick={() => save.mutate()} disabled={save.isPending}>Save templates</Button> : null}
+      {canManage ? (
+        <ActionButton type="button" onClick={() => save.mutate()} pending={save.isPending} success={saveOk}>
+          Save templates
+        </ActionButton>
+      ) : null}
     </div>
   );
 }
@@ -301,6 +309,7 @@ function AccountingPanel({ canManage }: { canManage: boolean }) {
       await queryClient.invalidateQueries({ queryKey: ["account-mappings"] });
     },
   });
+  const saveMappingOk = useActionSuccess(saveMapping);
   return (
     <div className="space-y-4">
       <Card className="overflow-x-auto p-5">
@@ -336,7 +345,7 @@ function AccountingPanel({ canManage }: { canManage: boolean }) {
                 <td className="py-2">
                   {canManage ? (
                     editing === row.eventCode ? (
-                      <Button type="button" onClick={() => saveMapping.mutate()}>Save</Button>
+                      <ActionButton type="button" onClick={() => saveMapping.mutate()} pending={saveMapping.isPending} success={saveMappingOk}>Save</ActionButton>
                     ) : (
                       <Button
                         type="button"
@@ -391,6 +400,7 @@ function ApprovalsPanel({ canManage }: { canManage: boolean }) {
       await queryClient.invalidateQueries({ queryKey: ["approval-delegations"] });
     },
   });
+  const revokeFx = useKeyedActionSuccess(revoke);
   return (
     <div className="space-y-4">
       <Card className="p-5">
@@ -408,7 +418,15 @@ function ApprovalsPanel({ canManage }: { canManage: boolean }) {
             <li key={row.id} className="flex flex-wrap items-center justify-between gap-2">
               <span>{row.delegator.email} → {row.delegate.email} ({row.permissionCode})</span>
               {canManage ? (
-                <Button type="button" variant="secondary" onClick={() => revoke.mutate(row.id)}>Revoke</Button>
+                <ActionButton
+                  type="button"
+                  variant="secondary"
+                  pending={revokeFx.isPendingFor(row.id)}
+                  success={revokeFx.isSuccessFor(row.id)}
+                  onClick={() => revoke.mutate(row.id)}
+                >
+                  Revoke
+                </ActionButton>
               ) : null}
             </li>
           ))}

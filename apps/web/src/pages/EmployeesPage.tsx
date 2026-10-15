@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -67,6 +69,8 @@ export function EmployeesPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const createOk = useActionSuccess(create);
+  const updateOk = useActionSuccess(update);
   const rows = employees.data?.data ?? [];
 
   return (
@@ -167,7 +171,7 @@ export function EmployeesPage() {
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending}>Save employee</Button>
+            <ActionButton type="submit" pending={create.isPending} success={createOk}>Save employee</ActionButton>
           </div>
         </form>
       </Modal>
@@ -195,7 +199,7 @@ export function EmployeesPage() {
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setEditId(null)}>Cancel</Button>
-            <Button type="submit" disabled={update.isPending}>Save changes</Button>
+            <ActionButton type="submit" pending={update.isPending} success={updateOk}>Save changes</ActionButton>
           </div>
         </form>
       </Modal>

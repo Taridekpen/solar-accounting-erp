@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useKeyedActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -77,6 +79,7 @@ export function ImportsPage() {
     },
     onError: (_error, step) => setMessage(`Step ${step} was rejected.`),
   });
+  const stepFx = useKeyedActionSuccess(runStep);
 
   return (
     <section className="space-y-4">
@@ -118,14 +121,31 @@ export function ImportsPage() {
             }}
           />
         </label>
+        {upload.isPending ? <p className="text-sm text-muted">Uploading…</p> : null}
         {selected ? (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => runStep.mutate("parse")}>Parse</Button>
-            <Button type="button" onClick={() => runStep.mutate("validate")}>Validate</Button>
-            <Button type="button" onClick={() => runStep.mutate("preview")}>Preview</Button>
-            <Button type="button" onClick={() => runStep.mutate("approve")}>Approve</Button>
-            <Button type="button" onClick={() => runStep.mutate("commit")}>Commit</Button>
-            <Button type="button" variant="secondary" onClick={() => runStep.mutate("report")}>Report</Button>
+            {(["parse", "validate", "preview", "approve", "commit", "report"] as const).map((step) => (
+              <ActionButton
+                key={step}
+                type="button"
+                variant={step === "report" ? "secondary" : "primary"}
+                pending={stepFx.isPendingFor(step)}
+                success={stepFx.isSuccessFor(step)}
+                onClick={() => runStep.mutate(step)}
+              >
+                {step === "parse"
+                  ? "Parse"
+                  : step === "validate"
+                    ? "Validate"
+                    : step === "preview"
+                      ? "Preview"
+                      : step === "approve"
+                        ? "Approve"
+                        : step === "commit"
+                          ? "Commit"
+                          : "Report"}
+              </ActionButton>
+            ))}
           </div>
         ) : null}
         {selected ? (

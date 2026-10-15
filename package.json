@@ -13,9 +13,11 @@
     "db:migrate": "pnpm --filter @solar/api db:migrate",
     "db:seed": "pnpm --filter @solar/api db:seed",
     "pptx": "node docs/presentations/build-pptx.mjs",
-    "pptx:how-it-works": "node docs/presentations/build-how-it-works-pptx.mjs"
+    "pptx:how-it-works": "node docs/presentations/build-how-it-works-pptx.mjs",
+    "tutorial:pdf": "node docs/tutorials/build-user-guide-pdf.mjs"
   },
   "devDependencies": {
+    "pdfkit": "^0.20.2",
     "pptxgenjs": "^4.0.1"
   }
 }

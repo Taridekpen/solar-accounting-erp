@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -38,6 +40,7 @@ export function ExpensesPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const saveOk = useActionSuccess(save);
 
   return (
     <section className="space-y-4">
@@ -124,7 +127,7 @@ export function ExpensesPage() {
             }} />
           </label>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
-          <Button onClick={() => save.mutate()}>Save draft</Button>
+          <ActionButton onClick={() => save.mutate()} pending={save.isPending} success={saveOk}>Save draft</ActionButton>
         </div>
       </Modal>
     </section>

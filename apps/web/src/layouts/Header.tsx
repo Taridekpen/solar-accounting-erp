@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, ChevronDown, Menu, Moon, Search, Sun, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
 import { Modal } from "@/components/ui/modal";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { changePassword, logout } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/auth-context";
@@ -15,6 +15,7 @@ import {
   markNotificationRead,
   refreshNotifications,
 } from "@/features/notifications/api";
+import { useActionSuccess, useKeyedActionSuccess } from "@/hooks/use-action-success";
 import { useUi } from "@/stores/ui-context";
 
 export function Header() {
@@ -67,6 +68,31 @@ export function Header() {
     },
     onError: (error: Error) => setPasswordMessage(error.message),
   });
+  const savePasswordOk = useActionSuccess(savePassword);
+  const refreshAlerts = useMutation({
+    mutationFn: refreshNotifications,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      await queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+    },
+  });
+  const markAllRead = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      await queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+    },
+  });
+  const markRead = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      await queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+    },
+  });
+  const refreshOk = useActionSuccess(refreshAlerts);
+  const markAllOk = useActionSuccess(markAllRead);
+  const markReadFx = useKeyedActionSuccess(markRead);
 
   return (
     <header className="no-print sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-card px-4">
@@ -167,9 +193,10 @@ export function Header() {
             </DropdownMenu.Item>
             <DropdownMenu.Item
               className="cursor-pointer rounded-lg px-3 py-2 text-sm outline-none hover:bg-canvas"
+              disabled={signOut.isPending}
               onSelect={() => signOut.mutate()}
             >
-              Sign out
+              {signOut.isPending ? "Signing out…" : "Sign out"}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
@@ -190,32 +217,26 @@ export function Header() {
         description="Approval requests, overdue invoices, low stock, and posting failures."
       >
         <div className="mb-3 flex gap-2">
-          <Button
+          <ActionButton
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => {
-              void refreshNotifications().then(async () => {
-                await queryClient.invalidateQueries({ queryKey: ["notifications"] });
-                await queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
-              });
-            }}
+            pending={refreshAlerts.isPending}
+            success={refreshOk}
+            onClick={() => refreshAlerts.mutate()}
           >
             Refresh alerts
-          </Button>
-          <Button
+          </ActionButton>
+          <ActionButton
             type="button"
             variant="secondary"
             size="sm"
-            onClick={() => {
-              void markAllNotificationsRead().then(async () => {
-                await queryClient.invalidateQueries({ queryKey: ["notifications"] });
-                await queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
-              });
-            }}
+            pending={markAllRead.isPending}
+            success={markAllOk}
+            onClick={() => markAllRead.mutate()}
           >
             Mark all read
-          </Button>
+          </ActionButton>
         </div>
         {(notifications.data ?? []).length === 0 ? (
           <p className="text-sm text-muted">No notifications.</p>
@@ -232,18 +253,13 @@ export function Header() {
                     </Link>
                   ) : null}
                   {!item.readAt ? (
-                    <button
-                      type="button"
-                      className="text-primary"
-                      onClick={() => {
-                        void markNotificationRead(item.id).then(async () => {
-                          await queryClient.invalidateQueries({ queryKey: ["notifications"] });
-                          await queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
-                        });
-                      }}
+                    <ActionTextButton
+                      pending={markReadFx.isPendingFor(item.id)}
+                      success={markReadFx.isSuccessFor(item.id)}
+                      onClick={() => markRead.mutate(item.id)}
                     >
                       Mark read
-                    </button>
+                    </ActionTextButton>
                   ) : null}
                 </div>
               </li>
@@ -263,7 +279,9 @@ export function Header() {
           <Input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="Current password" aria-label="Current password" />
           <Input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="New password" aria-label="New password" />
           {passwordMessage ? <p className="text-sm text-muted">{passwordMessage}</p> : null}
-          <Button type="submit" disabled={savePassword.isPending}>Save password</Button>
+          <ActionButton type="submit" pending={savePassword.isPending} success={savePasswordOk}>
+            Save password
+          </ActionButton>
         </form>
       </Modal>
     </header>

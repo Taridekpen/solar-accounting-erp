@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess, useKeyedActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
@@ -75,6 +77,10 @@ export function UsersPage() {
       await queryClient.invalidateQueries({ queryKey: ["user-sessions", selectedId] });
     },
   });
+  const inviteOk = useActionSuccess(invite);
+  const saveAssignmentsOk = useActionSuccess(saveAssignments);
+  const suspendFx = useKeyedActionSuccess(suspend);
+  const revokeFx = useKeyedActionSuccess(revoke);
 
   return (
     <div className="space-y-4">
@@ -109,7 +115,13 @@ export function UsersPage() {
                     Manage
                   </button>
                   {user.status !== "suspended" ? (
-                    <button type="button" className="text-primary" onClick={() => suspend.mutate(user.id)}>Suspend</button>
+                    <ActionTextButton
+                      pending={suspendFx.isPendingFor(user.id)}
+                      success={suspendFx.isSuccessFor(user.id)}
+                      onClick={() => suspend.mutate(user.id)}
+                    >
+                      Suspend
+                    </ActionTextButton>
                   ) : null}
                 </td>
               </tr>
@@ -142,13 +154,21 @@ export function UsersPage() {
             </label>
           </div>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
-          <Button type="button" onClick={() => saveAssignments.mutate()} disabled={saveAssignments.isPending}>Save assignments</Button>
+          <ActionButton type="button" onClick={() => saveAssignments.mutate()} pending={saveAssignments.isPending} success={saveAssignmentsOk}>
+            Save assignments
+          </ActionButton>
           <ul className="space-y-2 text-sm">
             {(sessions.data ?? []).map((session) => (
               <li key={session.id} className="flex items-center justify-between gap-3 border-t border-line pt-2">
                 <span>{session.revokedAt ? "Revoked" : "Active"} · {new Date(session.createdAt).toLocaleString()}</span>
                 {session.revokedAt ? null : (
-                  <button type="button" className="text-primary" onClick={() => revoke.mutate(session.id)}>Revoke</button>
+                  <ActionTextButton
+                    pending={revokeFx.isPendingFor(session.id)}
+                    success={revokeFx.isSuccessFor(session.id)}
+                    onClick={() => revoke.mutate(session.id)}
+                  >
+                    Revoke
+                  </ActionTextButton>
                 )}
               </li>
             ))}
@@ -180,9 +200,22 @@ export function UsersPage() {
             </select>
           </label>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
-          {token ? <p className="text-sm">Invitation token: <span className="font-mono break-all">{token}</span></p> : null}
+          {token ? (
+            <div className="space-y-2 rounded-lg border border-line bg-canvas p-3 text-sm">
+              <p>
+                Invitation token: <span className="font-mono break-all">{token}</span>
+              </p>
+              <p>
+                Activation link path:{" "}
+                <span className="font-mono break-all">/activate?token={token}</span>
+              </p>
+              <p className="text-muted">
+                Share the full URL (your site origin + path above) with the staff member. The token is shown once.
+              </p>
+            </div>
+          ) : null}
           <div className="flex justify-end">
-            <Button type="submit" disabled={invite.isPending}>Create invitation</Button>
+            <ActionButton type="submit" pending={invite.isPending} success={inviteOk}>Create invitation</ActionButton>
           </div>
         </form>
       </Modal>

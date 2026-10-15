@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -58,6 +60,7 @@ export function ProjectsPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const saveOk = useActionSuccess(save);
 
   return (
     <section className="space-y-4">
@@ -130,7 +133,7 @@ export function ProjectsPage() {
           <label className="block text-sm">Start<Input className="mt-1" aria-label="Project start" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
           <label className="block text-sm">Expected completion<Input className="mt-1" aria-label="Expected completion" type="date" value={expectedCompletionDate} onChange={(event) => setExpectedCompletionDate(event.target.value)} /></label>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
-          <Button onClick={() => save.mutate()}>Save draft</Button>
+          <ActionButton onClick={() => save.mutate()} pending={save.isPending} success={saveOk}>Save draft</ActionButton>
         </div>
       </Modal>
     </section>

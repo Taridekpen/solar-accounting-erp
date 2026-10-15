@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { ActionButton } from "@/components/ui/action-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { MoneyValue } from "@/components/ui/money-value";
 import { PageLoader } from "@/components/ui/page-loader";
 import { downloadReport, fetchProfitAndLoss, fetchTrialBalance } from "@/features/reports/api";
+import { useKeyedAsyncAction } from "@/hooks/use-action-success";
 
 export function ReportsPage() {
   const [report, setReport] = useState<"trial" | "profit">("trial");
@@ -16,6 +18,12 @@ export function ReportsPage() {
   const current = report === "trial" ? trial.data : profit.data;
   const error = report === "trial" ? trial.isError : profit.isError;
   const loading = report === "trial" ? trial.isLoading : profit.isLoading;
+  const exportFx = useKeyedAsyncAction();
+  const reportPath =
+    report === "trial"
+      ? "trial-balance?asOf=2026-12-31"
+      : "profit-and-loss?from=2026-12-01&to=2026-12-31";
+  const baseName = report === "trial" ? "trial-balance" : "profit-and-loss";
 
   return (
     <section className="space-y-4 print:space-y-2">
@@ -24,9 +32,24 @@ export function ReportsPage() {
         <div className="flex flex-wrap gap-2">
           <Button variant={report === "trial" ? "primary" : "secondary"} onClick={() => setReport("trial")}>Trial balance</Button>
           <Button variant={report === "profit" ? "primary" : "secondary"} onClick={() => setReport("profit")}>Profit and loss</Button>
-          <Button variant="secondary" onClick={() => downloadReport(`/reports/${report === "trial" ? "trial-balance?asOf=2026-12-31" : "profit-and-loss?from=2026-12-01&to=2026-12-31"}&format=csv`, report === "trial" ? "trial-balance.csv" : "profit-and-loss.csv")}>CSV</Button>
-          <Button variant="secondary" onClick={() => downloadReport(`/reports/${report === "trial" ? "trial-balance?asOf=2026-12-31" : "profit-and-loss?from=2026-12-01&to=2026-12-31"}&format=pdf`, report === "trial" ? "trial-balance.pdf" : "profit-and-loss.pdf")}>PDF</Button>
-          <Button variant="secondary" onClick={() => downloadReport(`/reports/${report === "trial" ? "trial-balance?asOf=2026-12-31" : "profit-and-loss?from=2026-12-01&to=2026-12-31"}&format=xlsx`, report === "trial" ? "trial-balance.xlsx" : "profit-and-loss.xlsx")}>Spreadsheet</Button>
+          {(["csv", "pdf", "xlsx"] as const).map((format) => (
+            <ActionButton
+              key={format}
+              variant="secondary"
+              pending={exportFx.isPendingFor(format)}
+              success={exportFx.isSuccessFor(format)}
+              onClick={() =>
+                void exportFx.run(format, () =>
+                  downloadReport(
+                    `/reports/${reportPath}&format=${format}`,
+                    `${baseName}.${format === "xlsx" ? "xlsx" : format}`,
+                  ),
+                )
+              }
+            >
+              {format === "csv" ? "CSV" : format === "pdf" ? "PDF" : "Spreadsheet"}
+            </ActionButton>
+          ))}
           <Button variant="secondary" onClick={() => window.print()}>Print</Button>
         </div>
       </div>

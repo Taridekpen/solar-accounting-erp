@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess, useKeyedActionSuccess, useKeyedAsyncAction } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -151,6 +153,13 @@ export function SalesPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const previewOk = useActionSuccess(previewMutation);
+  const saveOk = useActionSuccess(save);
+  const saveQuoteOk = useActionSuccess(saveQuote);
+  const saveReceiptOk = useActionSuccess(saveReceipt);
+  const saveReturnOk = useActionSuccess(saveReturn);
+  const finalizeFx = useKeyedActionSuccess(finalize);
+  const pdfFx = useKeyedAsyncAction();
   const rows = section === "invoices"
     ? invoices.data?.data ?? []
     : section === "quotations"
@@ -210,8 +219,23 @@ export function SalesPage() {
                   <td className="px-4 py-3 capitalize">{invoice.status}</td>
                   <td className="px-4 py-3 text-right"><MoneyValue amount={invoice.grandTotal} /></td>
                   <td className="px-4 py-3">
-                    {invoice.status === "draft" ? <button type="button" className="mr-3 text-primary" onClick={() => finalize.mutate(invoice.id)}>Finalize</button> : null}
-                    <button type="button" className="text-primary" onClick={() => void downloadSalesPdf(`/sales/invoices/${invoice.id}/pdf`, `${invoice.invoiceNumber}.pdf`)}>PDF</button>
+                    {invoice.status === "draft" ? (
+                      <ActionTextButton
+                        className="mr-3"
+                        pending={finalizeFx.isPendingFor(invoice.id)}
+                        success={finalizeFx.isSuccessFor(invoice.id)}
+                        onClick={() => finalize.mutate(invoice.id)}
+                      >
+                        Finalize
+                      </ActionTextButton>
+                    ) : null}
+                    <ActionTextButton
+                      pending={pdfFx.isPendingFor(`inv-${invoice.id}`)}
+                      success={pdfFx.isSuccessFor(`inv-${invoice.id}`)}
+                      onClick={() => void pdfFx.run(`inv-${invoice.id}`, () => downloadSalesPdf(`/sales/invoices/${invoice.id}/pdf`, `${invoice.invoiceNumber}.pdf`))}
+                    >
+                      PDF
+                    </ActionTextButton>
                   </td>
                 </tr>
               )) : null}
@@ -222,7 +246,13 @@ export function SalesPage() {
                   <td className="px-4 py-3 capitalize">{quotation.status}</td>
                   <td className="px-4 py-3 text-right"><MoneyValue amount={quotation.grandTotal} /></td>
                   <td className="px-4 py-3">
-                    <button type="button" className="text-primary" onClick={() => void downloadSalesPdf(`/sales/quotations/${quotation.id}/pdf`, `${quotation.quotationNumber}.pdf`)}>PDF</button>
+                    <ActionTextButton
+                      pending={pdfFx.isPendingFor(`q-${quotation.id}`)}
+                      success={pdfFx.isSuccessFor(`q-${quotation.id}`)}
+                      onClick={() => void pdfFx.run(`q-${quotation.id}`, () => downloadSalesPdf(`/sales/quotations/${quotation.id}/pdf`, `${quotation.quotationNumber}.pdf`))}
+                    >
+                      PDF
+                    </ActionTextButton>
                   </td>
                 </tr>
               )) : null}
@@ -319,8 +349,8 @@ export function SalesPage() {
           ) : null}
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={() => previewMutation.mutate()} disabled={previewMutation.isPending}>Preview</Button>
-            <Button type="button" onClick={() => save.mutate()} disabled={save.isPending || !preview}>Save draft</Button>
+            <ActionButton type="button" variant="secondary" onClick={() => previewMutation.mutate()} pending={previewMutation.isPending} success={previewOk}>Preview</ActionButton>
+            <ActionButton type="button" onClick={() => save.mutate()} pending={save.isPending} success={saveOk} disabled={!preview}>Save draft</ActionButton>
           </div>
           <p className="text-xs text-muted">Preview totals come from the API. Save the draft, then finalize or download the PDF from the list.</p>
         </div>
@@ -352,7 +382,7 @@ export function SalesPage() {
               </select>
             </label>
           ))}
-          <Button type="button" onClick={() => saveQuote.mutate()} disabled={saveQuote.isPending}>Save quotation</Button>
+          <ActionButton type="button" onClick={() => saveQuote.mutate()} pending={saveQuote.isPending} success={saveQuoteOk}>Save quotation</ActionButton>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
         </div>
       </Modal>
@@ -382,7 +412,7 @@ export function SalesPage() {
               <option value="pos">POS</option>
             </select>
           </label>
-          <Button type="button" onClick={() => saveReceipt.mutate()} disabled={saveReceipt.isPending || !customerId || !branchId}>Save receipt</Button>
+          <ActionButton type="button" onClick={() => saveReceipt.mutate()} pending={saveReceipt.isPending} success={saveReceiptOk} disabled={!customerId || !branchId}>Save receipt</ActionButton>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
         </div>
       </Modal>
@@ -405,7 +435,7 @@ export function SalesPage() {
             </select>
           </label>
           <label className="block text-sm">Quantity<Input className="mt-1" value={returnQuantity} onChange={(event) => setReturnQuantity(event.target.value)} /></label>
-          <Button type="button" onClick={() => saveReturn.mutate()} disabled={saveReturn.isPending || !returnLineId}>Request return</Button>
+          <ActionButton type="button" onClick={() => saveReturn.mutate()} pending={saveReturn.isPending} success={saveReturnOk} disabled={!returnLineId}>Request return</ActionButton>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
         </div>
       </Modal>

@@ -4,7 +4,8 @@ import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { z } from "zod";
 import { formatMoney } from "@solar/shared";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Button } from "@/components/ui/button";
+import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
+import { useActionSuccess, useKeyedActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,10 @@ export function AccountingPage() {
       }),
     onSuccess: refresh,
   });
+  const createJournalOk = useActionSuccess(createJournal);
+  const reverseOk = useActionSuccess(reverse);
+  const openingOk = useActionSuccess(opening);
+  const approveFx = useKeyedActionSuccess(approve);
   const postable = (accounts.data ?? []).filter((account) => account.isPostable && !account.isControlAccount && account.isActive);
 
   return (
@@ -104,9 +109,9 @@ export function AccountingPage() {
       {!review.isLoading ? (
       <div className="grid gap-4 lg:grid-cols-2">
         <Queue title="Recently posted" rows={review.data?.posted ?? []} />
-        <Queue title="Manual journal requests" rows={review.data?.manualRequests ?? []} onApprove={(id) => approve.mutate(id)} />
-        <Queue title="Reversal requests" rows={review.data?.reversalRequests ?? []} onApprove={(id) => approve.mutate(id)} />
-        <Queue title="Closed-period adjustments" rows={review.data?.closedPeriodAdjustments ?? []} onApprove={(id) => approve.mutate(id)} />
+        <Queue title="Manual journal requests" rows={review.data?.manualRequests ?? []} onApprove={(id) => approve.mutate(id)} approveFx={approveFx} />
+        <Queue title="Reversal requests" rows={review.data?.reversalRequests ?? []} onApprove={(id) => approve.mutate(id)} approveFx={approveFx} />
+        <Queue title="Closed-period adjustments" rows={review.data?.closedPeriodAdjustments ?? []} onApprove={(id) => approve.mutate(id)} approveFx={approveFx} />
         <AttemptList title="Failed posting attempts" rows={review.data?.failedAttempts ?? []} />
         <AttemptList title="Suspicious entries" rows={review.data?.suspicious ?? []} />
       </div>
@@ -121,7 +126,7 @@ export function AccountingPage() {
           <AccountSelect label="Debit account" accounts={postable} register={journalForm.register("debitAccountId")} />
           <AccountSelect label="Credit account" accounts={postable} register={journalForm.register("creditAccountId")} />
           <Input aria-label="Amount" placeholder="0.0000" {...journalForm.register("amount")} />
-          <Button type="submit" disabled={createJournal.isPending}>Submit for approval</Button>
+          <ActionButton type="submit" pending={createJournal.isPending} success={createJournalOk}>Submit for approval</ActionButton>
         </form>
         {createJournal.error ? <p className="text-sm text-rose-600">{createJournal.error.message}</p> : null}
       </Card>
@@ -135,7 +140,7 @@ export function AccountingPage() {
             ))}
           </select>
           <Input aria-label="Reversal reason" placeholder="Reason" {...reversalForm.register("reason")} />
-          <Button type="submit" disabled={reverse.isPending}>Reverse journal</Button>
+          <ActionButton type="submit" pending={reverse.isPending} success={reverseOk}>Reverse journal</ActionButton>
         </form>
         {reverse.error ? <p className="text-sm text-rose-600">{reverse.error.message}</p> : null}
       </Card>
@@ -155,7 +160,7 @@ export function AccountingPage() {
           </select>
           <Input aria-label="Detail account code" placeholder="Account code" {...openingForm.register("detailAccountCode")} />
           <Input aria-label="Detail amount" placeholder="Detail amount" {...openingForm.register("detailAmount")} />
-          <Button type="submit" disabled={opening.isPending}>Import opening balance</Button>
+          <ActionButton type="submit" pending={opening.isPending} success={openingOk}>Import opening balance</ActionButton>
         </form>
         {opening.error ? <p className="text-sm text-rose-600">{opening.error.message}</p> : null}
       </Card>
@@ -163,7 +168,17 @@ export function AccountingPage() {
   );
 }
 
-function Queue({ title, rows, onApprove }: { title: string; rows: Array<{ id: string; journalNumber: string; description: string; status: string }>; onApprove?: (id: string) => void }) {
+function Queue({
+  title,
+  rows,
+  onApprove,
+  approveFx,
+}: {
+  title: string;
+  rows: Array<{ id: string; journalNumber: string; description: string; status: string }>;
+  onApprove?: (id: string) => void;
+  approveFx?: { isPendingFor: (key: string) => boolean; isSuccessFor: (key: string) => boolean };
+}) {
   return (
     <Card className="p-4">
       <h2 className="font-semibold">{title}</h2>
@@ -173,7 +188,13 @@ function Queue({ title, rows, onApprove }: { title: string; rows: Array<{ id: st
           <li key={row.id} className="flex items-center justify-between gap-3">
             <span>{row.journalNumber} · {row.description}</span>
             {onApprove && row.status === "pending_approval" ? (
-              <button type="button" className="text-primary" onClick={() => onApprove(row.id)}>Approve</button>
+              <ActionTextButton
+                pending={approveFx?.isPendingFor(row.id)}
+                success={approveFx?.isSuccessFor(row.id)}
+                onClick={() => onApprove(row.id)}
+              >
+                Approve
+              </ActionTextButton>
             ) : null}
           </li>
         ))}

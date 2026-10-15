@@ -2,14 +2,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/ui/action-button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/page-loader";
 import { enrollMfa, login, verifyMfa } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/auth-context";
+import { useActionSuccess } from "@/hooks/use-action-success";
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email"),
@@ -21,9 +21,11 @@ type LoginForm = z.infer<typeof schema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { refresh } = useAuth();
   const [mfaStep, setMfaStep] = useState<"none" | "enroll" | "code">("none");
   const [secret, setSecret] = useState<string | null>(null);
+  const notice = (location.state as { notice?: string } | null)?.notice ?? null;
   const [message, setMessage] = useState<string | null>(null);
   const form = useForm<LoginForm>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "", totp: "" } });
 
@@ -56,6 +58,10 @@ export function LoginPage() {
     },
     onError: (error: Error) => setMessage(error.message),
   });
+  const signInOk = useActionSuccess(signIn);
+  const confirmMfaOk = useActionSuccess(confirmMfa);
+  const pending = signIn.isPending || confirmMfa.isPending;
+  const success = mfaStep === "enroll" ? confirmMfaOk : signInOk;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
@@ -88,12 +94,18 @@ export function LoginPage() {
             </label>
           ) : null}
           {secret ? <p className="text-sm">Enrollment secret: <span className="font-mono">{secret}</span></p> : null}
+          {notice && !message ? <p className="text-sm text-teal-700">{notice}</p> : null}
           {message ? <p className="text-sm text-rose-600">{message}</p> : null}
-          <Button type="submit" disabled={signIn.isPending || confirmMfa.isPending} className="inline-flex items-center justify-center gap-2">
-            {signIn.isPending || confirmMfa.isPending ? <Spinner className="h-4 w-4" /> : null}
+          <ActionButton type="submit" pending={pending} success={success}>
             {mfaStep === "enroll" ? "Enable authenticator" : "Sign in"}
-          </Button>
+          </ActionButton>
         </form>
+        <p className="mt-4 text-sm text-muted">
+          Have an invitation?{" "}
+          <Link to="/activate" className="text-primary">
+            Activate account
+          </Link>
+        </p>
       </Card>
     </div>
   );

@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -68,6 +70,11 @@ export function InventoryPage() {
     onSuccess: (row) => { setSerial(row); setFormError(null); },
     onError: (error: Error) => { setSerial(null); setFormError(error.message); },
   });
+  const saveTransferOk = useActionSuccess(saveTransfer);
+  const saveCountOk = useActionSuccess(saveCount);
+  const findSerialOk = useActionSuccess(findSerial);
+  const savePending = section === "counts" ? saveCount.isPending : saveTransfer.isPending;
+  const saveOk = section === "counts" ? saveCountOk : saveTransferOk;
 
   return (
     <section className="space-y-4">
@@ -150,7 +157,7 @@ export function InventoryPage() {
         <Card className="space-y-3 p-4">
           <form className="flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); findSerial.mutate(); }}>
             <Input aria-label="Serial number" value={serialQuery} onChange={(event) => setSerialQuery(event.target.value)} placeholder="Serial number" />
-            <Button type="submit">Look up</Button>
+            <ActionButton type="submit" pending={findSerial.isPending} success={findSerialOk}>Look up</ActionButton>
           </form>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           {serial ? (
@@ -211,7 +218,13 @@ export function InventoryPage() {
             <label className="block text-sm">Quantity<Input className="mt-1" value={quantity} onChange={(event) => setQuantity(event.target.value)} /></label>
           )}
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
-          <Button onClick={() => (section === "counts" ? saveCount.mutate() : saveTransfer.mutate())}>Save draft</Button>
+          <ActionButton
+            pending={savePending}
+            success={saveOk}
+            onClick={() => (section === "counts" ? saveCount.mutate() : saveTransfer.mutate())}
+          >
+            Save draft
+          </ActionButton>
         </div>
       </Modal>
     </section>

@@ -35,6 +35,13 @@ export function login(body: { email: string; password: string; totp?: string }) 
   return apiRequest<SessionView>("/auth/login", { method: "POST", body: JSON.stringify(body) });
 }
 
+export function activateAccount(token: string, password: string) {
+  return apiRequest<{ status: string }>("/auth/activate", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export async function logout() {
   try {
     return await apiRequest<{ status: string }>("/auth/logout", { method: "POST" });

@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -68,6 +70,7 @@ export function CustomersPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const saveOk = useActionSuccess(save);
   const rows = customers.data?.data ?? [];
 
   return (
@@ -152,7 +155,7 @@ export function CustomersPage() {
           <label className="block text-sm">Payment terms (days)<Input className="mt-1" type="number" {...form.register("paymentTermsDays")} /></label>
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           {form.formState.errors.name ? <p className="text-sm text-rose-600">{form.formState.errors.name.message}</p> : null}
-          <Button type="submit" disabled={save.isPending}>Save customer</Button>
+          <ActionButton type="submit" pending={save.isPending} success={saveOk}>Save customer</ActionButton>
         </form>
       </Modal>
       <Modal open={Boolean(statementId)} title="Customer statement" onOpenChange={(next) => { if (!next) setStatementId(null); }}>

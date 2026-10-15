@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ActionButton } from "@/components/ui/action-button";
 import { Button } from "@/components/ui/button";
+import { useActionSuccess } from "@/hooks/use-action-success";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -39,6 +41,7 @@ export function DepartmentsPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+  const createOk = useActionSuccess(create);
   const rows = departments.data?.data ?? [];
 
   return (
@@ -100,7 +103,7 @@ export function DepartmentsPage() {
           {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending}>Save department</Button>
+            <ActionButton type="submit" pending={create.isPending} success={createOk}>Save department</ActionButton>
           </div>
         </form>
       </Modal>
