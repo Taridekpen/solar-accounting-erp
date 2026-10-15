@@ -73,7 +73,7 @@ export class ExpensesService {
           employeeId: input.employeeId,
           projectId: input.projectId,
           receiptName: input.receiptName.trim(),
-          receiptData: receipt,
+          receiptData: new Uint8Array(receipt),
           createdByUserId: access.userId,
         },
         include: { category: true, branch: true, department: true },
