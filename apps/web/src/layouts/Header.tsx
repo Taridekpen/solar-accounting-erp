@@ -1,9 +1,10 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, ChevronDown, Menu, Moon, Search, Sun, UserRound } from "lucide-react";
+import { Bell, Calculator, ChevronDown, Menu, Moon, Search, Sun, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
+import { HeaderCalculator } from "@/components/ui/header-calculator";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { changePassword, logout } from "@/features/auth/api";
@@ -34,6 +35,7 @@ export function Header() {
     );
   };
   const [searchOpen, setSearchOpen] = useState(false);
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const canNotify = session?.permissions.includes("notifications.view") ?? false;
   const unread = useQuery({
@@ -138,15 +140,27 @@ export function Header() {
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
 
-      <div className="mx-auto w-full max-w-xl">
+      <div className="mx-auto flex w-full max-w-xl items-center gap-2">
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="flex h-10 w-full items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-sm text-muted"
+          className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-sm text-muted"
         >
-          <Search className="h-4 w-4" />
+          <Search className="h-4 w-4 shrink-0" />
           Search anything...
         </button>
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line"
+            aria-label={calculatorOpen ? "Close calculator" : "Open calculator"}
+            aria-expanded={calculatorOpen}
+            onClick={() => setCalculatorOpen((open) => !open)}
+          >
+            <Calculator className="h-4 w-4" />
+          </button>
+          <HeaderCalculator open={calculatorOpen} onClose={() => setCalculatorOpen(false)} />
+        </div>
       </div>
 
       <button

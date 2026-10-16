@@ -52,12 +52,54 @@ export interface LedgerReport {
   }>;
 }
 
+export interface BalanceSheetReport {
+  title: string;
+  companyName: string;
+  period: string;
+  scope: string;
+  currency: string;
+  generatedAt: string;
+  preparedBy: string;
+  sections: {
+    title: string;
+    rows: { label: string; amount: string }[];
+    total: string;
+  }[];
+  assets: string;
+  liabilitiesAndEquity: string;
+  clearing: string;
+  balanced: boolean;
+}
+
+export interface CashFlowReport {
+  title: string;
+  companyName: string;
+  period: string;
+  scope: string;
+  currency: string;
+  generatedAt: string;
+  preparedBy: string;
+  operating: { label: string; amount: string }[];
+  investing: { label: string; amount: string }[];
+  financing: { label: string; amount: string }[];
+  netChange: string;
+  cashChange: string;
+}
+
 export function fetchTrialBalance(asOf: string) {
   return apiRequest<TrialBalanceReport>(`/reports/trial-balance?asOf=${asOf}`);
 }
 
 export function fetchProfitAndLoss(from: string, to: string) {
   return apiRequest<ProfitReport>(`/reports/profit-and-loss?from=${from}&to=${to}`);
+}
+
+export function fetchBalanceSheet(asOf: string) {
+  return apiRequest<BalanceSheetReport>(`/reports/balance-sheet?asOf=${asOf}`);
+}
+
+export function fetchCashFlow(from: string, to: string) {
+  return apiRequest<CashFlowReport>(`/reports/cash-flow?from=${from}&to=${to}`);
 }
 
 export function fetchLedger(accountId: string, from: string, to: string) {
