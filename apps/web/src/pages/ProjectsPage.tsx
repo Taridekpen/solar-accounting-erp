@@ -184,7 +184,7 @@ export function ProjectsPage() {
         id: created.id,
         name: created.name,
         amount: created.amount,
-        sequence: created.sequence ?? Number(milestoneSequence) || existing.length + 1,
+        sequence: created.sequence ?? (Number(milestoneSequence) || existing.length + 1),
         status: created.status ?? "pending",
         createdByUserId: created.createdByUserId ?? userId ?? "",
       };
