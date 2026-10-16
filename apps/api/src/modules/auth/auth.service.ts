@@ -342,6 +342,15 @@ export class AuthService {
     return this.issueToken(userId, "invitation", 7 * 24 * 60 * 60 * 1000);
   }
 
+  async rotateCsrf(sessionId: string) {
+    const csrfToken = randomToken();
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { csrfTokenHash: sha256(csrfToken) },
+    });
+    return csrfToken;
+  }
+
   private async createSession(userId: string, mfaPending: boolean, userAgent?: string, ipAddress?: string) {
     const sessionToken = randomToken();
     const csrfToken = randomToken();

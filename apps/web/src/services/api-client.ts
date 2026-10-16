@@ -52,6 +52,11 @@ function csrfToken(): string | undefined {
   if (csrfFromApi) {
     return csrfFromApi;
   }
+  const stored = readStoredCsrf();
+  if (stored) {
+    csrfFromApi = stored;
+    return stored;
+  }
   const parts = document.cookie.split(";").map((part) => part.trim());
   const match = parts.find((part) => part.startsWith("solar_csrf="));
   return match ? decodeURIComponent(match.slice("solar_csrf=".length)) : undefined;

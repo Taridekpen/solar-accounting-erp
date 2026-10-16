@@ -11,7 +11,7 @@ import { AccessContext } from "./access";
 import { clearSessionCookie, sessionCookieOptions } from "./access.guard";
 import { ApprovalService } from "./approval.service";
 import { AuthService } from "./auth.service";
-import { SESSION_COOKIE, CSRF_COOKIE } from "./crypto";
+import { SESSION_COOKIE, CSRF_COOKIE, readCookie } from "./crypto";
 import { AllowPendingMfa, Public, RequirePermissions } from "./decorators";
 import {
   AuthorizeApprovalDto,
@@ -112,9 +112,16 @@ export class AuthController {
 
   @AllowPendingMfa()
   @Get("session")
-  async session(@Req() request: AuthRequest) {
+  async session(@Req() request: AuthRequest, @Res({ passthrough: true }) response: Response) {
     const view = await this.auth.sessionView(request.access.userId);
-    return { ...view, mfaPending: request.access.mfaPending, csrfToken: undefined };
+    // Echo the CSRF cookie in JSON so cross-origin clients (web on a different host)
+    // can store it after refresh/new tabs — document.cookie cannot read the API-domain cookie.
+    let csrfToken = readCookie(request.headers.cookie, CSRF_COOKIE);
+    if (!csrfToken) {
+      csrfToken = await this.auth.rotateCsrf(request.access.sessionId);
+      response.cookie(CSRF_COOKIE, csrfToken, { ...sessionCookieOptions(this.secure()), httpOnly: false });
+    }
+    return { ...view, mfaPending: request.access.mfaPending, csrfToken };
   }
 
   @Public()
