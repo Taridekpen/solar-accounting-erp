@@ -85,9 +85,9 @@ describe("Section 16 security pack", () => {
     await prisma?.$disconnect();
   });
 
-  it("returns 401 without a session", async () => {
+  it("serves imports to the open super administrator without a session", async () => {
     const response = await fetch(`${baseUrl}/imports`);
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(200);
   });
 
   it("rejects CSRF-missing unsafe mutations, permission gaps, and cross-branch documents", async () => {

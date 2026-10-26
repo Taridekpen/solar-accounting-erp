@@ -69,7 +69,7 @@ export function payExpense(id: string, body: { paymentAccountId: string; payment
 
 export async function fetchExpenseReceipt(id: string): Promise<{ blob: Blob; fileName: string; mimeType: string }> {
   const response = await fetch(`${apiBaseUrl()}/expenses/${id}/receipt`, {
-    credentials: "include",
+    credentials: "omit",
     headers: apiFetchHeaders(),
   });
   if (!response.ok) throw new Error("The receipt could not be loaded");

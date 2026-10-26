@@ -26,6 +26,8 @@ export interface AccessContext {
   mfaPending: boolean;
   mfaEnabled: boolean;
   scope: BranchScope;
+  /** Set when the request has no session and is served as the open super administrator. */
+  openAccess?: boolean;
 }
 
 export function isCompanyWide(roleCodes: string[]): boolean {

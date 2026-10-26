@@ -3,7 +3,13 @@ import type { DashboardDetail, DashboardPreset, DashboardSummary } from "@solar/
 const CSRF_STORAGE_KEY = "solar_csrf_token";
 
 export function apiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL || "https://accounting-api.internalgethelpsupport.com";
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (import.meta.env.DEV) {
+    return "http://127.0.0.1:3000";
+  }
+  return "https://accounting-api.internalgethelpsupport.com";
 }
 
 let activeBranchIds: string[] = [];
@@ -86,7 +92,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       headers.set("Content-Type", "application/json");
     }
   }
-  const response = await fetch(`${apiBaseUrl()}${path}`, { ...init, headers, credentials: "include" });
+  const response = await fetch(`${apiBaseUrl()}${path}`, { ...init, headers, credentials: "omit" });
   if (!response.ok) {
     if (response.status === 401) {
       clearCsrfToken();

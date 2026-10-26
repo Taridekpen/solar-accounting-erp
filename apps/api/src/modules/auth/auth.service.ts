@@ -8,6 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import argon2 from "argon2";
 import { AppEnv } from "../../config/env.schema";
 import { PrismaService } from "../../database/prisma.service";
+import { PERMISSIONS } from "../../../prisma/reference-data";
 import { BranchScope } from "../organization/branch-scope";
 import { AccessContext, isCompanyWide, isPrivileged } from "./access";
 import { AuditService } from "./audit.service";
@@ -26,11 +27,60 @@ const INVALID_LOGIN = "Invalid email or password";
 
 @Injectable()
 export class AuthService {
+  private openAccessCache: AccessContext | null = null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly config: ConfigService<AppEnv, true>,
   ) {}
+
+  /** Signed-out requests run as the seeded super administrator, with every permission. */
+  async openSuperAdministratorAccess(): Promise<AccessContext> {
+    if (this.openAccessCache) {
+      return this.openAccessCache;
+    }
+    const preferredEmail = (process.env.SEED_ADMIN_EMAIL ?? "admin@solar.local").trim().toLowerCase();
+    const preferred = await this.prisma.user.findUnique({
+      where: { email: preferredEmail },
+      include: { roles: { include: { role: true } } },
+    });
+    const preferredIsSuper = Boolean(
+      preferred &&
+        preferred.status !== "suspended" &&
+        preferred.status !== "locked" &&
+        preferred.roles.some((item) => item.role.code === "super_administrator"),
+    );
+    const fallback = preferredIsSuper
+      ? null
+      : await this.prisma.user.findFirst({
+          where: {
+            status: { notIn: ["suspended", "locked"] },
+            roles: { some: { role: { code: "super_administrator" } } },
+          },
+          orderBy: { createdAt: "asc" },
+        });
+    const userId = preferredIsSuper && preferred ? preferred.id : fallback?.id;
+    if (!userId) {
+      throw new UnauthorizedException("Super administrator is not available");
+    }
+    const view = await this.sessionView(userId);
+    const access: AccessContext = {
+      userId,
+      email: view.user.email,
+      sessionId: "00000000-0000-4000-8000-000000000001",
+      csrfTokenHash: "",
+      permissions: [...new Set([...view.permissions, ...PERMISSIONS])].sort(),
+      roleCodes: [...new Set(["super_administrator", ...view.roleCodes])],
+      companyWide: true,
+      mfaPending: false,
+      mfaEnabled: true,
+      scope: { type: "company" },
+      openAccess: true,
+    };
+    this.openAccessCache = access;
+    return access;
+  }
 
   async login(input: {
     email: string;
@@ -116,6 +166,9 @@ export class AuthService {
   }
 
   async logout(access: AccessContext, correlationId?: string) {
+    if (access.openAccess) {
+      return;
+    }
     await this.prisma.session.update({
       where: { id: access.sessionId },
       data: { revokedAt: new Date() },

@@ -2,12 +2,10 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Calculator, ChevronDown, Menu, Moon, Search, Sun, UserRound } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ActionButton, ActionTextButton } from "@/components/ui/action-button";
 import { HeaderCalculator } from "@/components/ui/header-calculator";
 import { Modal } from "@/components/ui/modal";
-import { Input } from "@/components/ui/input";
-import { changePassword, logout } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/auth-context";
 import {
   fetchNotifications,
@@ -21,8 +19,7 @@ import { useUi } from "@/stores/ui-context";
 
 export function Header() {
   const { setMobileNavOpen, theme, setTheme, selectedBranchIds, setSelectedBranchIds } = useUi();
-  const { session, refresh } = useAuth();
-  const navigate = useNavigate();
+  const { session } = useAuth();
   const queryClient = useQueryClient();
   const branches = session?.branches ?? [];
   const selected = branches.filter((branch) => selectedBranchIds.includes(branch.id));
@@ -49,28 +46,6 @@ export function Header() {
     queryFn: fetchNotifications,
     enabled: notificationsOpen && canNotify,
   });
-  const [passwordOpen, setPasswordOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
-  const signOut = useMutation({
-    mutationFn: logout,
-    onSuccess: async () => {
-      await queryClient.clear();
-      await refresh();
-      navigate("/login");
-    },
-  });
-  const savePassword = useMutation({
-    mutationFn: () => changePassword(currentPassword, newPassword),
-    onSuccess: () => {
-      setPasswordMessage("Password changed.");
-      setCurrentPassword("");
-      setNewPassword("");
-    },
-    onError: (error: Error) => setPasswordMessage(error.message),
-  });
-  const savePasswordOk = useActionSuccess(savePassword);
   const refreshAlerts = useMutation({
     mutationFn: refreshNotifications,
     onSuccess: async () => {
@@ -183,8 +158,8 @@ export function Header() {
             <UserRound className="h-4 w-4" />
           </span>
           <span className="hidden text-left sm:block">
-            <span className="block text-xs font-medium leading-4 text-ink">{session?.user.email ?? "Account"}</span>
-            <span className="block text-[11px] leading-4 text-muted">{session?.user.mfaEnabled ? "MFA enabled" : "Account"}</span>
+            <span className="block text-xs font-medium leading-4 text-ink">Super Administrator</span>
+            <span className="block text-[11px] leading-4 text-muted">{session?.user.email ?? "Open access"}</span>
           </span>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
@@ -196,21 +171,8 @@ export function Header() {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               {theme === "dark" ? "Light theme" : "Dark theme"}
             </DropdownMenu.Item>
-            <DropdownMenu.Item
-              className="cursor-pointer rounded-lg px-3 py-2 text-sm outline-none hover:bg-canvas"
-              onSelect={() => setPasswordOpen(true)}
-            >
-              Change password
-            </DropdownMenu.Item>
             <DropdownMenu.Item className="rounded-lg px-3 py-2 text-sm text-muted outline-none" disabled>
-              {session?.user.mfaEnabled ? "Authenticator enabled" : "Authenticator required before access"}
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              className="cursor-pointer rounded-lg px-3 py-2 text-sm outline-none hover:bg-canvas"
-              disabled={signOut.isPending}
-              onSelect={() => signOut.mutate()}
-            >
-              {signOut.isPending ? "Signing out…" : "Sign out"}
+              Super Administrator
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
@@ -280,23 +242,6 @@ export function Header() {
             ))}
           </ul>
         )}
-      </Modal>
-      <Modal open={passwordOpen} onOpenChange={setPasswordOpen} title="Change password">
-        <form
-          className="space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setPasswordMessage(null);
-            savePassword.mutate();
-          }}
-        >
-          <Input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} placeholder="Current password" aria-label="Current password" />
-          <Input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="New password" aria-label="New password" />
-          {passwordMessage ? <p className="text-sm text-muted">{passwordMessage}</p> : null}
-          <ActionButton type="submit" pending={savePassword.isPending} success={savePasswordOk}>
-            Save password
-          </ActionButton>
-        </form>
       </Modal>
     </header>
   );

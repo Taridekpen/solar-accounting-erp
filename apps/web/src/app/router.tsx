@@ -1,7 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import type { AppPermission } from "@/app/navigation";
 import { navigation } from "@/app/navigation";
-import { PageLoader } from "@/components/ui/page-loader";
 import { useAuth } from "@/features/auth/auth-context";
 import { AppShell } from "@/layouts/AppShell";
 import { AccountingPage } from "@/pages/AccountingPage";
@@ -15,8 +14,6 @@ import { BankingPage } from "@/pages/BankingPage";
 import { EmployeesPage } from "@/pages/EmployeesPage";
 import { ExpensesPage } from "@/pages/ExpensesPage";
 import { InventoryPage } from "@/pages/InventoryPage";
-import { ActivateAccountPage } from "@/pages/ActivateAccountPage";
-import { LoginPage } from "@/pages/LoginPage";
 import { ModulePlaceholderPage } from "@/pages/ModulePlaceholderPage";
 import { ProjectsPage } from "@/pages/ProjectsPage";
 import { ReportsPage } from "@/pages/ReportsPage";
@@ -84,27 +81,20 @@ function pageFor(path: string) {
   return <ModulePlaceholderPage path={path} />;
 }
 
-function ProtectedShell() {
-  const { session, isLoading } = useAuth();
-  if (isLoading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-canvas p-6">
-        <PageLoader label="Loading account…" className="w-full max-w-md border-0 bg-transparent shadow-none" />
-      </div>
-    );
-  }
-  if (!session || session.mfaPending) {
-    return <Navigate to="/login" replace />;
-  }
-  return <AppShell permissions={session.permissions as readonly AppPermission[]} />;
+function OpenShell() {
+  const { session } = useAuth();
+  const permissions = session?.permissions.length
+    ? (session.permissions as readonly AppPermission[])
+    : "all";
+  return <AppShell permissions={permissions} />;
 }
 
 export const router = createBrowserRouter([
-  { path: "/login", element: <LoginPage /> },
-  { path: "/activate", element: <ActivateAccountPage /> },
+  { path: "/login", element: <Navigate to="/" replace /> },
+  { path: "/activate", element: <Navigate to="/" replace /> },
   {
     path: "/",
-    element: <ProtectedShell />,
+    element: <OpenShell />,
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "dashboard/details/:metric", element: <DashboardDetailPage /> },

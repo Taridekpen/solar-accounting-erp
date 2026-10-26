@@ -156,7 +156,7 @@ export function createReturn(body: Record<string, unknown>) {
 }
 
 export async function downloadSalesPdf(path: string, filename: string) {
-  const response = await fetch(`${apiBaseUrl()}${path}`, { credentials: "include" });
+  const response = await fetch(`${apiBaseUrl()}${path}`, { credentials: "omit" });
   if (!response.ok) {
     throw new Error("The PDF could not be downloaded");
   }

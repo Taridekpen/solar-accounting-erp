@@ -114,6 +114,16 @@ export class AuthController {
   @Get("session")
   async session(@Req() request: AuthRequest, @Res({ passthrough: true }) response: Response) {
     const view = await this.auth.sessionView(request.access.userId);
+    if (request.access.openAccess) {
+      return {
+        ...view,
+        permissions: request.access.permissions,
+        roleCodes: request.access.roleCodes,
+        companyWide: true,
+        mfaPending: false,
+        csrfToken: "open",
+      };
+    }
     // Echo the CSRF cookie in JSON so cross-origin clients (web on a different host)
     // can store it after refresh/new tabs — document.cookie cannot read the API-domain cookie.
     let csrfToken = readCookie(request.headers.cookie, CSRF_COOKIE);

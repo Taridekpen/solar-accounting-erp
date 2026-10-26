@@ -72,9 +72,9 @@ describe("authentication", () => {
     expect(count).toBe(1);
   });
 
-  it("rejects a request without a session", async () => {
+  it("serves the super administrator when no session is present", async () => {
     const response = await request("/branches");
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(200);
   });
 
   it("returns the same login error for an unknown email and a wrong password", async () => {
@@ -126,7 +126,7 @@ describe("authentication", () => {
     expect(other.status).toBe(403);
   });
 
-  it("rejects the next request after a session is revoked", async () => {
+  it("continues as the super administrator after a session is revoked", async () => {
     const jar = await signIn(branchEmail, branchPassword);
     const current = await request("/auth/session", { jar });
     expect(current.status).toBe(200);
@@ -136,7 +136,9 @@ describe("authentication", () => {
     const revoked = await request(`/auth/sessions/${active?.id}`, { method: "DELETE", jar, csrf: true });
     expect(revoked.status).toBe(200);
     const again = await request("/auth/session", { jar });
-    expect(again.status).toBe(401);
+    expect(again.status).toBe(200);
+    expect((again.body as { roleCodes?: string[]; companyWide?: boolean }).roleCodes).toContain("super_administrator");
+    expect((again.body as { companyWide?: boolean }).companyWide).toBe(true);
   });
 
   it("rejects a user authorizing their own restricted approval", async () => {

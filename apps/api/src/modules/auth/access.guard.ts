@@ -3,7 +3,6 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-  UnauthorizedException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request, Response } from "express";
@@ -32,10 +31,8 @@ export class AccessGuard implements CanActivate {
     }
     const request = context.switchToHttp().getRequest<Request & { access?: AccessContext; branchScope?: BranchScope }>();
     const token = readCookie(request.headers.cookie, SESSION_COOKIE);
-    const access = token ? await this.auth.resolveAccess(token) : null;
-    if (!access) {
-      throw new UnauthorizedException("Authentication is required");
-    }
+    const sessionAccess = token ? await this.auth.resolveAccess(token) : null;
+    const access = sessionAccess ?? (await this.auth.openSuperAdministratorAccess());
     const allowPending = this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING_MFA, [
       context.getHandler(),
       context.getClass(),
@@ -43,7 +40,7 @@ export class AccessGuard implements CanActivate {
     if (access.mfaPending && !allowPending) {
       throw new ForbiddenException("Multi-factor enrollment is required");
     }
-    if (UNSAFE.has(request.method)) {
+    if (!access.openAccess && UNSAFE.has(request.method)) {
       const header = request.header("x-csrf-token");
       if (!header || sha256(header) !== access.csrfTokenHash) {
         throw new ForbiddenException("CSRF token is missing or invalid");

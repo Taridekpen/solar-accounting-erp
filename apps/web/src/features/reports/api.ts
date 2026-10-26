@@ -107,7 +107,7 @@ export function fetchLedger(accountId: string, from: string, to: string) {
 }
 
 export async function downloadReport(path: string, filename: string) {
-  const response = await fetch(`${apiBaseUrl()}${path}`, { credentials: "include" });
+  const response = await fetch(`${apiBaseUrl()}${path}`, { credentials: "omit" });
   if (!response.ok) throw new Error("The report could not be downloaded");
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
