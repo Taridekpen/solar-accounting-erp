@@ -8,7 +8,6 @@ import { ConfigService } from "@nestjs/config";
 import argon2 from "argon2";
 import { AppEnv } from "../../config/env.schema";
 import { PrismaService } from "../../database/prisma.service";
-import { PERMISSIONS } from "../../../prisma/reference-data";
 import { BranchScope } from "../organization/branch-scope";
 import { AccessContext, isCompanyWide, isPrivileged } from "./access";
 import { AuditService } from "./audit.service";
@@ -70,7 +69,7 @@ export class AuthService {
       email: view.user.email,
       sessionId: "00000000-0000-4000-8000-000000000001",
       csrfTokenHash: "",
-      permissions: [...new Set([...view.permissions, ...PERMISSIONS])].sort(),
+      permissions: view.permissions,
       roleCodes: [...new Set(["super_administrator", ...view.roleCodes])],
       companyWide: true,
       mfaPending: false,
